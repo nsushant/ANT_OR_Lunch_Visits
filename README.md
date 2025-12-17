@@ -28,7 +28,7 @@ It’s intentionally lightweight and low-maintenance.
 
 ```
 .
-├── lunches.md        # Main log of lunch visits / reviews
+├── lunch_log.md      # Main log of lunch visits / reviews
 ├── places.md         # Master list of lunch spots visited before
 ├── wishlist.md       # Places we want to try but nobody has visited 
 └── README.md         # You are here
@@ -38,7 +38,7 @@ It’s intentionally lightweight and low-maintenance.
 
 ## 📍 Adding a New Recommendation
 
-If you'd like t recommend a place you've been to.
+If you'd like to recommend a place you've been to.
 
 1. Add it to `places.md`
 2. Include:
@@ -47,7 +47,12 @@ If you'd like t recommend a place you've been to.
    * Location
    * Cuisine
    * Price range
+> Note 1: the price ranges are the following: 
+> - \$:   > 10€
+> - \$\$:  10€ - 15€
+> - \$\$\$: < 15€
 
+> Note 2: Give the exact location of the place (i.e., the address)
 ---
 
 
@@ -57,7 +62,7 @@ This file stores metrics describing the experience after a visit.
 We use this data to decide the frequency of future recommendations for the visited place. 
 If you'd like to detail your experience, 
 
-1. Open `lunches.md`
+1. Open `lunch_log.md`
 2. Add a new entry at the **top** of the file
 3. Use the following format:
 
