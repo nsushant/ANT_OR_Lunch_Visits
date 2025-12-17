@@ -46,6 +46,14 @@
 - Location: Sint-Gummarusstraat 35, 2060 Antwerpen
 - Cuisine: Afghan
 - Price range: $$
-- Note: Lareg restaurant, also sit-down type. Prices are not so high, 10-15 EUR approximatley. Has many options and has a lot of room.
+- Note: Large restaurant, also sit-down type. Prices are not so high, 10-15 EUR approximatley. Has many options and has a lot of room.
+
+---
+
+- Name: Ovanos
+- Location: Lange Zavelstraat 40, 2060 Antwerpen
+- Cuisine: Morrocan 
+- Price range: $
+- Note: Morrocan breakfast and lunch place, not so expensive. Just a bit more far from the university.
 
 ---
