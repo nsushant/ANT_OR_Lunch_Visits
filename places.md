@@ -40,8 +40,6 @@
 
 ---
 
----
-
 - Name: Afghan Darbar Restaurant
 - Location: Sint-Gummarusstraat 35, 2060 Antwerpen
 - Cuisine: Afghan
