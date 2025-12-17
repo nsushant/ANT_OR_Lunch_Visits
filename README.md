@@ -93,7 +93,7 @@ Add it to `wishlist.md` with:
 * Keep entries short and factual
 * No need for perfect formatting — consistency > perfection
 * Feel free to update old entries with better notes
-* Be respectful (this is about lunch, not reviews)
+
 
 ---
 
