@@ -38,6 +38,9 @@ It’s intentionally lightweight and low-maintenance.
 
 ## 📝 How to Add a Lunch Entry
 
+This file stores metrics describing the experience after a visit. 
+We use this data to decide the frequency of future recommendations for the visited place. 
+
 1. Open `lunches.md`
 2. Add a new entry at the **top** of the file
 3. Use the following format:
@@ -48,6 +51,7 @@ It’s intentionally lightweight and low-maintenance.
 - **People:** @name1, @name2
 - **Cost:** $ / $$ / $$$
 - **Notes:** Short comments about the food, wait time, etc.
+- **Rating out of 5:** 
 ```
 
 Example:
@@ -58,6 +62,7 @@ Example:
 - **People:** Alice, Bob
 - **Cost:** $$
 - **Notes:** Fast service, great noodles, limited seating.
+- **Rating out of 5:** 4
 ```
 
 ---
