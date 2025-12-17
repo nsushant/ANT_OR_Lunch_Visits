@@ -28,18 +28,34 @@ It’s intentionally lightweight and low-maintenance.
 
 ```
 .
-├── lunches.md        # Main log of lunch visits
-├── places.md         # Master list of known lunch spots
-├── wishlist.md       # Places we want to try next
+├── lunches.md        # Main log of lunch visits / reviews
+├── places.md         # Master list of lunch spots visited before
+├── wishlist.md       # Places we want to try but nobody has visited 
 └── README.md         # You are here
 ```
 
 ---
 
-## 📝 How to Add a Lunch Entry
+## 📍 Adding a New Recommendation
+
+If you'd like t recommend a place you've been to.
+
+1. Add it to `places.md`
+2. Include:
+
+   * Name
+   * Location
+   * Cuisine
+   * Price range
+
+---
+
+
+## 📝 Detailing a Visit 
 
 This file stores metrics describing the experience after a visit. 
 We use this data to decide the frequency of future recommendations for the visited place. 
+If you'd like to detail your experience, 
 
 1. Open `lunches.md`
 2. Add a new entry at the **top** of the file
@@ -67,23 +83,9 @@ Example:
 
 ---
 
-## 📍 Adding a New Place
-
-If we went somewhere new:
-
-1. Add it to `places.md`
-2. Include:
-
-   * Name
-   * Location
-   * Cuisine
-   * Price range
-
----
-
 ## ⭐ Wishlist
 
-Want to suggest a place?
+A list of places we'd like to try but no one has been to. 
 
 Add it to `wishlist.md` with:
 
