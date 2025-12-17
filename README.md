@@ -47,12 +47,25 @@ If you'd like to recommend a place you've been to.
    * Location
    * Cuisine
    * Price range
+   * Note
+
 > Note 1: the price ranges are the following: 
-> - \$:   > 10€
-> - \$\$:  10€ - 15€
+> - \$:     > 10€
+> - \$\$:   10€ - 15€
 > - \$\$\$: < 15€
 
 > Note 2: Give the exact location of the place (i.e., the address)
+
+Example: 
+```md
+---
+- Name: Munji
+- Location: Oude Koornmarkt 68, 2000 Antwerpen
+- Cuisine: middle-eastern 
+- Price range: $
+- Note: Falafel place
+---
+```
 ---
 
 
