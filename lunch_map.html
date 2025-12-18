@@ -28,7 +28,7 @@
         .travel-info {
             position: absolute;
             bottom: 20px;
-            left: 20px;
+            right: 20px;
             background: white;
             padding: 10px;
             border-radius: 5px;
@@ -64,7 +64,7 @@
         <button onclick="clearSelection()">Clear Selection</button>
     </div>
     
-    <div class="travel-info" id="travelInfo" style="bottom: 120px;">
+    <div class="travel-info" id="travelInfo">
         <h4>Travel Information</h4>
         <div id="travelDetails"></div>
     </div>
@@ -79,7 +79,7 @@
         }).addTo(map);
         
         // Location data
-        const locations = [{"name": "Munji", "address": "Oude Koornmarkt 68, 2000 Antwerpen", "cuisine": "Middle Eastern", "price_range": "$", "note": "Place only serves falafel wraps.", "coordinates": [51.2214, 4.401], "visited": true}, {"name": "Tjoung Tjoung", "address": "Breydelstraat 16, 2018 Antwerpen", "cuisine": "Thai", "price_range": "$$", "note": "More of a sit down restaurant (heavier, real meal), but casual. Prices for dishes are 12-18 EUR depending on what you get.", "coordinates": [51.217, 4.421], "visited": false}, {"name": "Koffie Dealers", "address": "Paardenmarkt 117, 2000 Antwerpen", "cuisine": "Greek, European", "price_range": "$", "note": "Coffee shop (coffee itself is good here), it has savory pastries too, with feta cheese and spinach so it can be a smaller lunch too. It can be busy at times.", "coordinates": [51.218, 4.401], "visited": false}, {"name": "Phiin C\u00e0 Ph\u00ea", "address": "Vlasmarkt 22, 2000 Antwerpen", "cuisine": "Viet", "price_range": "$", "note": "Viet coffee place. it has spring rolls and bahn mi too. Smaller place, few seats inside.", "coordinates": [51.219, 4.4], "visited": false}, {"name": "Arepa culture Antwerpen \ud83c\uddfb\ud83c\uddea", "address": "Sint-Katelijnevest 46, 2000 Antwerpen", "cuisine": "Venezuelan", "price_range": "$$", "note": "Arepas (corn based pastry with savory ingredients inside, like beef, guacamole etc.) A bit pricey now, for what you get (might be small). It was tasty last time I went.", "coordinates": [51.215, 4.405], "visited": false}, {"name": "Afghan Darbar Restaurant", "address": "Sint-Gummarusstraat 35, 2060 Antwerpen", "cuisine": "Afghan", "price_range": "$$", "note": "Large restaurant, also sit-down type. Prices are not so high, 10-15 EUR approximatley. Has many options and has a lot of room.", "coordinates": [51.21, 4.42], "visited": false}, {"name": "Ovanos", "address": "Lange Zavelstraat 40, 2060 Antwerpen", "cuisine": "Morrocan", "price_range": "$", "note": "Morrocan breakfast and lunch place, not so expensive. Just a bit more far from the university.", "coordinates": [51.208, 4.425], "visited": false}];
+        const locations = [{"name": "Munji", "address": "Oude Koornmarkt 68, 2000 Antwerpen", "cuisine": "Middle Eastern", "price_range": "$", "note": "Place only serves falafel wraps.", "coordinates": [51.218929, 4.4002575], "visited": true}, {"name": "Tjoung Tjoung", "address": "Breydelstraat 16, 2018 Antwerpen", "cuisine": "Thai", "price_range": "$$", "note": "More of a sit down restaurant (heavier, real meal), but casual. Prices for dishes are 12-18 EUR depending on what you get.", "coordinates": [51.2186649, 4.4191256], "visited": false}, {"name": "Koffie Dealers", "address": "Paardenmarkt 117, 2000 Antwerpen", "cuisine": "Greek, European", "price_range": "$", "note": "Coffee shop (coffee itself is good here), it has savory pastries too, with feta cheese and spinach so it can be a smaller lunch too. It can be busy at times.", "coordinates": [51.2247986, 4.4141247], "visited": false}, {"name": "Phiin C\u00e0 Ph\u00ea", "address": "Vlasmarkt 22, 2000 Antwerpen", "cuisine": "Viet", "price_range": "$", "note": "Viet coffee place. it has spring rolls and bahn mi too. Smaller place, few seats inside.", "coordinates": [51.2196747, 4.3973521], "visited": false}, {"name": "Arepa culture Antwerpen \ud83c\uddfb\ud83c\uddea", "address": "Sint-Katelijnevest 46, 2000 Antwerpen", "cuisine": "Venezuelan", "price_range": "$$", "note": "Arepas (corn based pastry with savory ingredients inside, like beef, guacamole etc.) A bit pricey now, for what you get (might be small). It was tasty last time I went.", "coordinates": [51.2196254, 4.4050927], "visited": false}, {"name": "Afghan Darbar Restaurant", "address": "Sint-Gummarusstraat 35, 2060 Antwerpen", "cuisine": "Afghan", "price_range": "$$", "note": "Large restaurant, also sit-down type. Prices are not so high, 10-15 EUR approximatley. Has many options and has a lot of room.", "coordinates": [51.2248866, 4.4206542], "visited": false}, {"name": "Ovanos", "address": "Lange Zavelstraat 40, 2060 Antwerpen", "cuisine": "Morrocan", "price_range": "$", "note": "Morrocan breakfast and lunch place, not so expensive. Just a bit more far from the university.", "coordinates": [51.2233783, 4.4272309], "visited": false}];
         
         // Selected markers for routing
         let selectedMarkers = [];
@@ -126,15 +126,15 @@
             });
         });
         
-        // Add University of Antwerp marker
-        const universityMarker = L.marker([51.2054, 4.4132], {icon: universityIcon})
+        // Add University of Antwerp Stadscampus marker
+        const universityMarker = L.marker([51.2229654, 4.4102137], {icon: universityIcon})
             .addTo(map)
-            .bindPopup('<strong>University of Antwerp</strong><br>Reference Location');
+            .bindPopup('<strong>University of Antwerp - Stadscampus</strong><br>Prinsstraat 13, 2000 Antwerpen');
         
         universityMarker.on('click', function() {
             handleMarkerClick({
-                name: 'University of Antwerp',
-                coordinates: [51.2054, 4.4132]
+                name: 'University of Antwerp - Stadscampus',
+                coordinates: [51.2229654, 4.4102137]
             }, universityMarker);
         });
         

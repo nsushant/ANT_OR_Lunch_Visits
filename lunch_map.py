@@ -6,13 +6,17 @@ Creates an interactive map showing lunch locations from markdown files
 
 import re
 import json
-import requests
 from typing import Dict, List, Tuple, Optional
+from geopy.geocoders import Nominatim
+from geopy.extra.rate_limiter import RateLimiter
 
 class LocationData:
     def __init__(self):
         self.places = []
         self.lunch_log = []
+        # Initialize geopy geocoder
+        self.geolocator = Nominatim(user_agent="LunchMap/1.0 (educational purpose)")
+        self.geocode = RateLimiter(self.geolocator.geocode, min_delay_seconds=1)
         
     def parse_places_md(self, content: str) -> List[Dict]:
         """Parse places.md to extract location information"""
@@ -67,33 +71,17 @@ class LocationData:
         return lunch_entries
     
     def geocode_address(self, address: str) -> Optional[Tuple[float, float]]:
-        """Geocode address using Nominatim (OpenStreetMap)"""
+        """Geocode address using geopy with Nominatim (OpenStreetMap)"""
         try:
             # Add Antwerpen, Belgium if not specified
             if "Antwerpen" not in address and "Belgium" not in address:
                 full_address = f"{address}, Antwerpen, Belgium"
             else:
                 full_address = address
-                
-            url = f"https://nominatim.openstreetmap.org/search"
-            params = {
-                'q': full_address,
-                'format': 'json',
-                'limit': 1,
-                'addressdetails': 1
-            }
-            headers = {
-                'User-Agent': 'LunchMap/1.0 (educational purpose)'
-            }
             
-            response = requests.get(url, params=params, headers=headers, timeout=20)
-            response.raise_for_status()
-            
-            data = response.json()
-            if data and len(data) > 0:
-                lat = float(data[0]['lat'])
-                lon = float(data[0]['lon'])
-                return (lat, lon)
+            location = self.geocode(full_address)
+            if location:
+                return (location.latitude, location.longitude)
                 
         except Exception as e:
             print(f"Geocoding failed for '{address}': {e}")
@@ -119,28 +107,17 @@ class LocationData:
     
     def geocode_all_locations(self):
         """Geocode all addresses"""
-        # Predefined coordinates for known Antwerp locations
-        antwerp_coords = {
-            'Munji': (51.2214, 4.4010),
-            'Tjoung Tjoung': (51.2170, 4.4210),
-            'Koffie Dealers': (51.2180, 4.4010),
-            'Phiin Cà Phê': (51.2190, 4.4000),
-            'Arepa culture Antwerpen 🇻🇪': (51.2150, 4.4050),
-            'Afghan Darbar Restaurant': (51.2100, 4.4200),
-            'Ovanos': (51.2080, 4.4250)
-        }
-        
-        # Geocode places
+        # Geocode places using their actual addresses
         for place in self.places:
-            if place['name'] in antwerp_coords:
-                place['coordinates'] = antwerp_coords[place['name']]
-                print(f"Using predefined coordinates for: {place['name']}")
-            elif 'address' in place:
+            if 'address' in place:
                 coords = self.geocode_address(place['address'])
                 if coords:
                     place['coordinates'] = coords
+                    print(f"Geocoded: {place['name']} -> {coords}")
                 else:
                     print(f"Failed to geocode: {place['name']} - {place['address']}")
+            else:
+                print(f"No address found for: {place['name']}")
         
         # Mark visited places
         visited_names = {entry['name'] for entry in self.lunch_log}
@@ -179,7 +156,7 @@ class LocationData:
         .travel-info {
             position: absolute;
             bottom: 20px;
-            left: 20px;
+            right: 20px;
             background: white;
             padding: 10px;
             border-radius: 5px;
@@ -215,7 +192,7 @@ class LocationData:
         <button onclick="clearSelection()">Clear Selection</button>
     </div>
     
-    <div class="travel-info" id="travelInfo" style="bottom: 120px;">
+    <div class="travel-info" id="travelInfo">
         <h4>Travel Information</h4>
         <div id="travelDetails"></div>
     </div>
@@ -277,15 +254,15 @@ class LocationData:
             });
         });
         
-        // Add University of Antwerp marker
-        const universityMarker = L.marker([51.2054, 4.4132], {icon: universityIcon})
+        // Add University of Antwerp Stadscampus marker
+        const universityMarker = L.marker([51.2229654, 4.4102137], {icon: universityIcon})
             .addTo(map)
-            .bindPopup('<strong>University of Antwerp</strong><br>Reference Location');
+            .bindPopup('<strong>University of Antwerp - Stadscampus</strong><br>Prinsstraat 13, 2000 Antwerpen');
         
         universityMarker.on('click', function() {
             handleMarkerClick({
-                name: 'University of Antwerp',
-                coordinates: [51.2054, 4.4132]
+                name: 'University of Antwerp - Stadscampus',
+                coordinates: [51.2229654, 4.4102137]
             }, universityMarker);
         });
         
