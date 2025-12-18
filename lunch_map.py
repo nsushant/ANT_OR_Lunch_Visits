@@ -367,8 +367,7 @@ class LocationData:
                 addWaypoints: false,
                 createMarker: function() { return null; }, // Don't create additional markers
                 router: L.Routing.osrmv1({
-                    serviceUrl: 'https://router.project-osrm.org/route/v1',
-                    profile: 'foot'
+                    serviceUrl: 'https://routing.openstreetmap.de/routed-foot/route/v1'
                 }),
                 lineOptions: {
                     styles: [{color: 'red', weight: 4, opacity: 0.7}]
