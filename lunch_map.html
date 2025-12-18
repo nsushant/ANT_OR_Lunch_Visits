@@ -1,0 +1,225 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lunch Locations Map</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    
+    <style>
+        body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        #map { height: 100vh; width: 100%; }
+        .info-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            z-index: 1000;
+            max-width: 250px;
+        }
+        .travel-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: none;
+        }
+        .selection-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            z-index: 1000;
+            max-width: 250px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    
+    <div class="info-panel">
+        <h3>Lunch Locations Map</h3>
+        <p><span style="color: green;">●</span> Visited locations</p>
+        <p><span style="color: blue;">●</span> All other places</p>
+        <p><span style="color: red;">●</span> University of Antwerp</p>
+    </div>
+    
+    <div class="selection-panel">
+        <p><strong>Click two markers to see travel time</strong></p>
+        <button onclick="clearSelection()">Clear Selection</button>
+    </div>
+    
+    <div class="travel-info" id="travelInfo" style="bottom: 120px;">
+        <h4>Travel Information</h4>
+        <div id="travelDetails"></div>
+    </div>
+
+    <script>
+        // Initialize map
+        const map = L.map('map').setView([51.2054, 4.4132], 13); // Center on Antwerp
+        
+        // Add tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        // Location data
+        const locations = [{"name": "Munji", "address": "Oude Koornmarkt 68, 2000 Antwerpen", "cuisine": "Middle Eastern", "price_range": "$", "note": "Place only serves falafel wraps.", "coordinates": [51.2214, 4.401], "visited": true}, {"name": "Tjoung Tjoung", "address": "Breydelstraat 16, 2018 Antwerpen", "cuisine": "Thai", "price_range": "$$", "note": "More of a sit down restaurant (heavier, real meal), but casual. Prices for dishes are 12-18 EUR depending on what you get.", "coordinates": [51.217, 4.421], "visited": false}, {"name": "Koffie Dealers", "address": "Paardenmarkt 117, 2000 Antwerpen", "cuisine": "Greek, European", "price_range": "$", "note": "Coffee shop (coffee itself is good here), it has savory pastries too, with feta cheese and spinach so it can be a smaller lunch too. It can be busy at times.", "coordinates": [51.218, 4.401], "visited": false}, {"name": "Phiin C\u00e0 Ph\u00ea", "address": "Vlasmarkt 22, 2000 Antwerpen", "cuisine": "Viet", "price_range": "$", "note": "Viet coffee place. it has spring rolls and bahn mi too. Smaller place, few seats inside.", "coordinates": [51.219, 4.4], "visited": false}, {"name": "Arepa culture Antwerpen \ud83c\uddfb\ud83c\uddea", "address": "Sint-Katelijnevest 46, 2000 Antwerpen", "cuisine": "Venezuelan", "price_range": "$$", "note": "Arepas (corn based pastry with savory ingredients inside, like beef, guacamole etc.) A bit pricey now, for what you get (might be small). It was tasty last time I went.", "coordinates": [51.215, 4.405], "visited": false}, {"name": "Afghan Darbar Restaurant", "address": "Sint-Gummarusstraat 35, 2060 Antwerpen", "cuisine": "Afghan", "price_range": "$$", "note": "Large restaurant, also sit-down type. Prices are not so high, 10-15 EUR approximatley. Has many options and has a lot of room.", "coordinates": [51.21, 4.42], "visited": false}, {"name": "Ovanos", "address": "Lange Zavelstraat 40, 2060 Antwerpen", "cuisine": "Morrocan", "price_range": "$", "note": "Morrocan breakfast and lunch place, not so expensive. Just a bit more far from the university.", "coordinates": [51.208, 4.425], "visited": false}];
+        
+        // Selected markers for routing
+        let selectedMarkers = [];
+        let routingControl = null;
+        
+        // Create custom icons
+        const visitedIcon = L.divIcon({
+            html: '<div style="background: green; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+            iconSize: [16, 16],
+            className: 'custom-marker'
+        });
+        
+        const placeIcon = L.divIcon({
+            html: '<div style="background: blue; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+            iconSize: [16, 16],
+            className: 'custom-marker'
+        });
+        
+        const universityIcon = L.divIcon({
+            html: '<div style="background: red; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+            iconSize: [16, 16],
+            className: 'custom-marker'
+        });
+        
+        // Add markers
+        locations.forEach(function(location) {
+            const icon = location.visited ? visitedIcon : placeIcon;
+            
+            const marker = L.marker([location.coordinates[0], location.coordinates[1]], {icon: icon})
+                .addTo(map);
+            
+            let popupContent = `<strong>${location.name}</strong><br>`;
+            if (location.address) popupContent += `Address: ${location.address}<br>`;
+            if (location.cuisine) popupContent += `Cuisine: ${location.cuisine}<br>`;
+            if (location.price_range) popupContent += `Price: ${location.price_range}<br>`;
+            if (location.visited) popupContent += `<span style="color: green;">✓ Visited</span><br>`;
+            if (location.note) popupContent += `Note: ${location.note}`;
+            
+            marker.bindPopup(popupContent);
+            
+            // Add click handler for routing
+            marker.on('click', function() {
+                handleMarkerClick(location, marker);
+            });
+        });
+        
+        // Add University of Antwerp marker
+        const universityMarker = L.marker([51.2054, 4.4132], {icon: universityIcon})
+            .addTo(map)
+            .bindPopup('<strong>University of Antwerp</strong><br>Reference Location');
+        
+        universityMarker.on('click', function() {
+            handleMarkerClick({
+                name: 'University of Antwerp',
+                coordinates: [51.2054, 4.4132]
+            }, universityMarker);
+        });
+        
+        function handleMarkerClick(location, marker) {
+            if (selectedMarkers.length >= 2) {
+                clearSelection();
+            }
+            
+            selectedMarkers.push({
+                location: location,
+                marker: marker
+            });
+            
+            // Highlight selected marker
+            marker._icon.style.border = '3px solid yellow';
+            marker._icon.style.width = '16px';
+            marker._icon.style.height = '16px';
+            
+            if (selectedMarkers.length === 2) {
+                calculateRoute();
+            }
+        }
+        
+        function calculateRoute() {
+            if (selectedMarkers.length !== 2) return;
+            
+            const start = selectedMarkers[0].location.coordinates;
+            const end = selectedMarkers[1].location.coordinates;
+            
+            // Remove existing route
+            if (routingControl) {
+                map.removeControl(routingControl);
+            }
+            
+            // Add routing control
+            routingControl = L.Routing.control({
+                waypoints: [
+                    L.latLng(start[0], start[1]),
+                    L.latLng(end[0], end[1])
+                ],
+                routeWhileDragging: false,
+                addWaypoints: false,
+                createMarker: function() { return null; }, // Don't create additional markers
+                lineOptions: {
+                    styles: [{color: 'red', weight: 4, opacity: 0.7}]
+                }
+            }).on('routesfound', function(e) {
+                const routes = e.routes;
+                const summary = routes[0].summary;
+                
+                // Display travel information
+                const travelInfo = document.getElementById('travelInfo');
+                const travelDetails = document.getElementById('travelDetails');
+                
+                travelDetails.innerHTML = `
+                    <strong>From:</strong> ${selectedMarkers[0].location.name}<br>
+                    <strong>To:</strong> ${selectedMarkers[1].location.name}<br>
+                    <strong>Distance:</strong> ${(summary.totalDistance / 1000).toFixed(2)} km<br>
+                    <strong>Travel Time:</strong> ${Math.round(summary.totalTime / 60)} minutes
+                `;
+                
+                travelInfo.style.display = 'block';
+            }).addTo(map);
+        }
+        
+        function clearSelection() {
+            // Reset marker styles
+            selectedMarkers.forEach(function(item) {
+                item.marker._icon.style.border = '2px solid white';
+                item.marker._icon.style.width = '12px';
+                item.marker._icon.style.height = '12px';
+            });
+            
+            selectedMarkers = [];
+            
+            // Remove route
+            if (routingControl) {
+                map.removeControl(routingControl);
+                routingControl = null;
+            }
+            
+            // Hide travel info
+            document.getElementById('travelInfo').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
+        
