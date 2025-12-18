@@ -9,6 +9,8 @@ This repo helps us:
 * Share recommendations and notes
 * Decide where to go next more easily
 
+You can see a preview of the map here :https://nsushant.github.io/ANT_OR_Lunch_Visits/lunch_map.html 
+
 ---
 
 ## 📌 What This Repo Is For
