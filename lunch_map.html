@@ -16,8 +16,8 @@
         #map { height: 100vh; width: 100%; }
         .info-panel {
             position: absolute;
-            top: 10px;
-            right: 10px;
+            top: 60px;
+            left: 10px;
             background: white;
             padding: 10px;
             border-radius: 5px;
@@ -169,7 +169,7 @@
                 map.removeControl(routingControl);
             }
             
-            // Add routing control
+            // Add routing control for walking
             routingControl = L.Routing.control({
                 waypoints: [
                     L.latLng(start[0], start[1]),
@@ -178,12 +178,20 @@
                 routeWhileDragging: false,
                 addWaypoints: false,
                 createMarker: function() { return null; }, // Don't create additional markers
+                router: L.Routing.osrmv1({
+                    serviceUrl: 'https://router.project-osrm.org/route/v1',
+                    profile: 'foot'
+                }),
                 lineOptions: {
                     styles: [{color: 'red', weight: 4, opacity: 0.7}]
                 }
             }).on('routesfound', function(e) {
                 const routes = e.routes;
                 const summary = routes[0].summary;
+                
+                // Calculate walking time for faster walking speed (brisk pace: 6.0 km/h = 100 m/min)
+                const walkingSpeedMetersPerMinute = 100;
+                const walkingTimeMinutes = Math.ceil(summary.totalDistance / walkingSpeedMetersPerMinute);
                 
                 // Display travel information
                 const travelInfo = document.getElementById('travelInfo');
@@ -193,7 +201,8 @@
                     <strong>From:</strong> ${selectedMarkers[0].location.name}<br>
                     <strong>To:</strong> ${selectedMarkers[1].location.name}<br>
                     <strong>Distance:</strong> ${(summary.totalDistance / 1000).toFixed(2)} km<br>
-                    <strong>Travel Time:</strong> ${Math.round(summary.totalTime / 60)} minutes
+                    <strong>Walking Time:</strong> ${walkingTimeMinutes} minutes<br>
+                    <small>(brisk 6.0 km/h walking speed)</small>
                 `;
                 
                 travelInfo.style.display = 'block';

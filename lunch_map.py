@@ -6,6 +6,7 @@ Creates an interactive map showing lunch locations from markdown files
 
 import re
 import json
+import time
 from typing import Dict, List, Tuple, Optional
 from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
@@ -14,9 +15,15 @@ class LocationData:
     def __init__(self):
         self.places = []
         self.lunch_log = []
-        # Initialize geopy geocoder
+        self.geocoded_cache = {}  # Cache for batch geocoded addresses
+        # Initialize geopy geocoder 
         self.geolocator = Nominatim(user_agent="LunchMap/1.0 (educational purpose)")
         self.geocode = RateLimiter(self.geolocator.geocode, min_delay_seconds=1)
+        
+        # Minimal fallback coordinates for essential locations only
+        self.fallback_coordinates = {
+            'University of Antwerp - Stadscampus': (51.2229654, 4.4102137)
+        }
         
     def parse_places_md(self, content: str) -> List[Dict]:
         """Parse places.md to extract location information"""
@@ -71,22 +78,66 @@ class LocationData:
         return lunch_entries
     
     def geocode_address(self, address: str) -> Optional[Tuple[float, float]]:
-        """Geocode address using geopy with Nominatim (OpenStreetMap)"""
-        try:
-            # Add Antwerpen, Belgium if not specified
-            if "Antwerpen" not in address and "Belgium" not in address:
-                full_address = f"{address}, Antwerpen, Belgium"
-            else:
-                full_address = address
-            
-            location = self.geocode(full_address)
-            if location:
-                return (location.latitude, location.longitude)
+        """Get coordinates for address (from cache or fallback)"""
+        # First check if we have fallback coordinates
+        if address in self.fallback_coordinates:
+            return self.fallback_coordinates[address]
+        
+        # Check if we have geocoded this address already
+        if address in self.geocoded_cache:
+            return self.geocoded_cache[address]
+        
+        # If geocoding failed during batch processing, use default
+        return (51.2054, 4.4132)  # Center of Antwerp
+    
+    def batch_geocode_addresses(self, addresses: List[str]) -> Dict[str, Tuple[float, float]]:
+        """Batch geocode all unique addresses at once"""
+        print(f"Starting batch geocoding for {len(addresses)} unique addresses...")
+        
+        geocoded_results = {}
+        failed_addresses = []
+        
+        for i, address in enumerate(addresses):
+            if address in self.fallback_coordinates:
+                print(f"Using fallback coordinates for: {address}")
+                geocoded_results[address] = self.fallback_coordinates[address]
+                continue
                 
-        except Exception as e:
-            print(f"Geocoding failed for '{address}': {e}")
-            
-        return None
+            try:
+                # Add Antwerpen, Belgium if not specified
+                if "Antwerpen" not in address and "Belgium" not in address:
+                    full_address = f"{address}, Antwerpen, Belgium"
+                else:
+                    full_address = address
+                
+                print(f"Geocoding {i+1}/{len(addresses)}: {address}")
+                
+                # Use rate limiter for batch processing to be safe
+                location = self.geocode(full_address)
+                
+                if location:
+                    geocoded_results[address] = (location.latitude, location.longitude)
+                    print(f"  ✓ Success: ({location.latitude}, {location.longitude})")
+                else:
+                    failed_addresses.append(address)
+                    print(f"  ✗ Failed: No results found")
+                    
+                # Add delay between requests to respect rate limits
+                time.sleep(1.5)  # Slightly longer delay for reliability
+                
+            except Exception as e:
+                failed_addresses.append(address)
+                print(f"  ✗ Error: {e}")
+                # Add extra delay after errors
+                time.sleep(2)
+        
+        # Handle failed addresses with default coordinates
+        for address in failed_addresses:
+            print(f"Using default Antwerp coordinates for failed address: {address}")
+            geocoded_results[address] = (51.2054, 4.4132)
+        
+        print(f"Batch geocoding completed. {len(geocoded_results) - len(failed_addresses)} successful, {len(failed_addresses)} failed.")
+        return geocoded_results
     
     def load_data(self):
         """Load and parse data from markdown files"""
@@ -106,16 +157,25 @@ class LocationData:
         return True
     
     def geocode_all_locations(self):
-        """Geocode all addresses"""
-        # Geocode places using their actual addresses
+        """Geocode all addresses using batch processing"""
+        # Collect all unique addresses
+        unique_addresses = []
+        for place in self.places:
+            if 'address' in place and place['address'] not in unique_addresses:
+                unique_addresses.append(place['address'])
+        
+        # Batch geocode all unique addresses
+        self.geocoded_cache = self.batch_geocode_addresses(unique_addresses)
+        
+        # Assign coordinates to places
         for place in self.places:
             if 'address' in place:
                 coords = self.geocode_address(place['address'])
                 if coords:
                     place['coordinates'] = coords
-                    print(f"Geocoded: {place['name']} -> {coords}")
+                    print(f"Assigned coordinates: {place['name']} -> {coords}")
                 else:
-                    print(f"Failed to geocode: {place['name']} - {place['address']}")
+                    print(f"Failed to assign coordinates: {place['name']} - {place['address']}")
             else:
                 print(f"No address found for: {place['name']}")
         
@@ -144,8 +204,8 @@ class LocationData:
         #map { height: 100vh; width: 100%; }
         .info-panel {
             position: absolute;
-            top: 10px;
-            right: 10px;
+            top: 60px;
+            left: 10px;
             background: white;
             padding: 10px;
             border-radius: 5px;
@@ -297,7 +357,7 @@ class LocationData:
                 map.removeControl(routingControl);
             }
             
-            // Add routing control
+            // Add routing control for walking
             routingControl = L.Routing.control({
                 waypoints: [
                     L.latLng(start[0], start[1]),
@@ -306,12 +366,20 @@ class LocationData:
                 routeWhileDragging: false,
                 addWaypoints: false,
                 createMarker: function() { return null; }, // Don't create additional markers
+                router: L.Routing.osrmv1({
+                    serviceUrl: 'https://router.project-osrm.org/route/v1',
+                    profile: 'foot'
+                }),
                 lineOptions: {
                     styles: [{color: 'red', weight: 4, opacity: 0.7}]
                 }
             }).on('routesfound', function(e) {
                 const routes = e.routes;
                 const summary = routes[0].summary;
+                
+                // Calculate walking time for faster walking speed (brisk pace: 6.0 km/h = 100 m/min)
+                const walkingSpeedMetersPerMinute = 100;
+                const walkingTimeMinutes = Math.ceil(summary.totalDistance / walkingSpeedMetersPerMinute);
                 
                 // Display travel information
                 const travelInfo = document.getElementById('travelInfo');
@@ -321,7 +389,8 @@ class LocationData:
                     <strong>From:</strong> ${selectedMarkers[0].location.name}<br>
                     <strong>To:</strong> ${selectedMarkers[1].location.name}<br>
                     <strong>Distance:</strong> ${(summary.totalDistance / 1000).toFixed(2)} km<br>
-                    <strong>Travel Time:</strong> ${Math.round(summary.totalTime / 60)} minutes
+                    <strong>Walking Time:</strong> ${walkingTimeMinutes} minutes<br>
+                    <small>(brisk 6.0 km/h walking speed)</small>
                 `;
                 
                 travelInfo.style.display = 'block';

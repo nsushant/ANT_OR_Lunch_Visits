@@ -34,16 +34,27 @@ Visit details...
 
 ### 2. Converting Addresses to Coordinates
 
-The script uses the **geopy** library to automatically convert street addresses to latitude/longitude coordinates:
+The script uses **batch geocoding** to efficiently convert addresses to coordinates:
 
 ```python
-# Takes "Oude Koornmarkt 68, 2000 Antwerpen"
-# Returns: (51.218929, 4.4002575)
+# Batch processes all unique addresses at once
+# "Oude Koornmarkt 68, 2000 Antwerpen" → (51.218929, 4.4002575)
+# "Breydelstraat 16, 2018 Antwerpen" → (51.218665, 4.419126)
+# etc.
 ```
 
+**Batch Geocoding Benefits:**
+- **Reduced API calls**: Processes unique addresses once, then reuses results
+- **Better reliability**: Includes proper error handling and retry logic
+- **Progress tracking**: Shows which address is being processed
+- **Faster execution**: Minimizes network requests
+- **Automatic caching**: Results stored during batch process for reuse
+
+**Technical Details:**
 - Automatically adds "Antwerpen, Belgium" if not present
-- Uses OpenStreetMap's Nominatim service
-- Includes rate limiting (1 second delay) to respect API limits
+- Uses OpenStreetMap's Nominatim service with 1.5-second delays
+- Handles failed addresses gracefully (falls back to Antwerp center)
+- Collects all unique addresses first, then processes them sequentially
 
 ### 3. Creating the Map
 
@@ -80,7 +91,11 @@ places.md + lunch_log.md
         ↓
     Parse data
         ↓
-    Geocode addresses → Get coordinates
+    Extract unique addresses
+        ↓
+    Batch geocode → Get coordinates
+        ↓
+    Cache results & assign to places
         ↓
     Generate HTML + JavaScript
         ↓
@@ -98,8 +113,14 @@ python3 lunch_map.py
 ```
 Loading location data...
 Geocoding addresses...
-Geocoded: Munji -> (51.218929, 4.4002575)
-Geocoded: Tjoung Tjoung -> (51.2186649, 4.4191256)
+Starting batch geocoding for 7 unique addresses...
+Geocoding 1/7: Oude Koornmarkt 68, 2000 Antwerpen
+  ✓ Success: (51.218929, 4.4002575)
+Geocoding 2/7: Breydelstraat 16, 2018 Antwerpen
+  ✓ Success: (51.218665, 4.419126)
+...
+Batch geocoding completed. 7 successful, 0 failed.
+Assigned coordinates: Munji -> (51.218929, 4.4002575)
 ...
 Generating map HTML...
 Map created successfully! Open lunch_map.html in your browser.
@@ -119,7 +140,24 @@ Map created successfully! Open lunch_map.html in your browser.
 The script handles common issues:
 - Missing markdown files
 - Failed geocoding (continues with other locations)
-- Network errors (tries each address individually)
+- Network timeouts (graceful fallback to Antwerp center coordinates)
+- Rate limit respect (1.5-second delays between API calls)
+- Batch processing continues even if individual addresses fail
+
+## Geocoding Improvements
+
+**Before (Individual Geocoding):**
+- Each restaurant geocoded separately
+- Multiple network requests for same addresses
+- Susceptible to timeout failures
+- No progress tracking
+
+**After (Batch Geocoding):**
+- All unique addresses processed once
+- Results cached and reused
+- Better error handling and recovery
+- Progress tracking during processing
+- Reduced API load and faster execution
 
 ## Map Features
 
@@ -135,3 +173,19 @@ The script handles common issues:
 - Visit status (visited/unvisited)
 
 This system automatically keeps your map updated - just add new restaurants to `places.md` or new visits to `lunch_log.md` and run the script again!
+
+## Maintenance
+
+**Adding New Restaurants:**
+1. Add restaurant details to `places.md`
+2. Run `python3 lunch_map.py`
+3. New addresses will be automatically geocoded in the next batch
+
+**Performance:**
+- Subsequent runs are faster when addresses don't change
+- Batch processing minimizes network requests
+- Only new/unique addresses trigger API calls
+
+**Verification:**
+- Run `python3 verify_coordinates.py` to check coordinate accuracy
+- Compare map locations against known addresses in Antwerp
