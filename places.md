@@ -4,7 +4,7 @@
 - Location: Oude Koornmarkt 68, 2000 Antwerpen
 - Cuisine: Middle Eastern 
 - Price range: $
-- Note: Place only serves falafel wraps.
+- Note: Very tasty falafel wrap. Place is small and only has around 8 seats, place outside on a terrace. There were heating lamps. A bit pricey for a wrap at 9.5€
 
 ---
 
@@ -28,7 +28,7 @@
 - Location: Vlasmarkt 22, 2000 Antwerpen
 - Cuisine: Viet 
 - Price range: $
-- Note: Viet coffee place. it has spring rolls and bahn mi too. Smaller place, few seats inside. 
+- Note: Viet coffee place. It has spring rolls and bahn mi too. Smaller place, few seats inside. 
 
 ---
 
@@ -53,5 +53,69 @@
 - Cuisine: Morrocan 
 - Price range: $
 - Note: Morrocan breakfast and lunch place, not so expensive. Just a bit more far from the university.
+
+---
+
+- Name: Ellis Gourmet Burger Eilandje
+- Location: Sint-Aldegondiskaai 52, 2000 Antwerpen
+- Cuisine: American (?) 
+- Price range: $$
+- Note: "Gourmet" burger place. Lunch menu and student menu at 12.5 EUR, no drinks included. Other options more expensive.
+
+---
+
+- Name: Aydo
+- Location: Kammenstraat 10, 2000 Antwerpen
+- Cuisine: Lebanese
+- Price range: $
+- Note: Lebanese wraps, limited seating space.
+
+---
+
+- Name: Souvlakeri
+- Location: Grote Markt 35, 2000 Antwerpen
+- Cuisine: Greek
+- Price range: $
+- Note: Greek wraps.
+
+---
+
+- Name: Banh Mi Antwerp
+- Location: Korte Koepoortstraat 8, 2000 Antwerpen
+- Cuisine: Viet
+- Price range: $-$$
+- Note: Vietnamese sandwhiches.
+
+---
+
+- Name: Lhasa Wok
+- Location: Jezusstraat 35, 2000 Antwerpen
+- Cuisine: "Asian"
+- Price range: $
+- Note: Wok place, most likely for takeaway. 
+
+---
+
+- Name: Broodjeszaak Te Peca
+- Location: Sint-Jacobsmarkt 62, 2000 Antwerpen
+- Cuisine: Belgian
+- Price range: $
+- Note: Sandwhich place, it has burgers too. 
+
+---
+
+- Name: Mandarin
+- Location: Statiestraat 18, 2018 Antwerpen
+- Cuisine: Lebanese BBQ
+- Price range: $-$$
+- Note: BBQ place, relatively cheap. It has falafel and kibbeh too (veggie).
+
+---
+
+- Name: Snack omar
+- Location: Sint-Jansplein 55, 2060 Antwerpen
+- Cuisine: Iraq
+- Price range: $-$$
+- Note: Iraqi place, cheap-ish. 
 
 ---
