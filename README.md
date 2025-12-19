@@ -50,6 +50,7 @@ If you'd like to recommend a place you've been to.
    * Cuisine
    * Price range
    * Note
+   * pics
 
 > Note 1: the price ranges are the following: 
 > - \$:     > 10€
@@ -57,6 +58,8 @@ If you'd like to recommend a place you've been to.
 > - \$\$\$: < 15€
 
 > Note 2: Give the exact location of the place (i.e., the address)
+
+> Note 3: The pics field is optional. If you do give it, add you images in a subfolder of `\images` and put the relative path to this foler in the field pics.◊
 
 Example: 
 ```md
@@ -66,6 +69,7 @@ Example:
 - Cuisine: middle-eastern 
 - Price range: $
 - Note: Falafel place
+- pics: images/munji
 ---
 ```
 ---

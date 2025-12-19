@@ -45,6 +45,8 @@ class LocationData:
                 current_place['price_range'] = line.split(':', 1)[1].strip()
             elif line.startswith('- Note:'):
                 current_place['note'] = line.split(':', 1)[1].strip()
+            elif line.startswith('- pics:'):
+                current_place['pics'] = line.split(':', 1)[1].strip()
                 
         if current_place:
             places.append(current_place)
@@ -76,6 +78,27 @@ class LocationData:
             lunch_entries.append(entry)
             
         return lunch_entries
+    
+    def get_images_from_directory(self, pics_dir: str) -> List[str]:
+        """Get list of images from the pics directory"""
+        import os
+        
+        if not pics_dir or not os.path.exists(pics_dir):
+            return []
+        
+        supported_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
+        images = []
+        
+        try:
+            for filename in sorted(os.listdir(pics_dir)):
+                ext = os.path.splitext(filename)[1].lower()
+                if ext in supported_extensions:
+                    # Store relative path for HTML
+                    images.append(os.path.join(pics_dir, filename))
+        except Exception as e:
+            print(f"Error reading directory {pics_dir}: {e}")
+        
+        return images
     
     def geocode_address(self, address: str) -> Optional[Tuple[float, float]]:
         """Get coordinates for address (from cache or fallback)"""
@@ -178,6 +201,13 @@ class LocationData:
                     print(f"Failed to assign coordinates: {place['name']} - {place['address']}")
             else:
                 print(f"No address found for: {place['name']}")
+            
+            # Process images if pics field exists
+            if 'pics' in place:
+                images = self.get_images_from_directory(place['pics'])
+                if images:
+                    place['images'] = images
+                    print(f"Found {len(images)} image(s) for {place['name']}")
         
         # Mark visited places
         visited_names = {entry['name'] for entry in self.lunch_log}
@@ -234,6 +264,42 @@ class LocationData:
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
             z-index: 1000;
             max-width: 250px;
+        }
+        .popup-image-gallery {
+            margin-top: 10px;
+            max-width: 300px;
+        }
+        .popup-image-gallery img {
+            width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            display: none;
+        }
+        .popup-image-gallery img.active {
+            display: block;
+        }
+        .popup-gallery-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+        }
+        .popup-nav-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .popup-nav-btn:hover {
+            background: #45a049;
+        }
+        .popup-counter {
+            font-size: 12px;
+            color: #666;
         }
     </style>
 </head>
@@ -292,6 +358,9 @@ class LocationData:
             className: 'custom-marker'
         });
         
+        // Store gallery states for each marker
+        const galleryStates = new Map();
+        
         // Add markers
         locations.forEach(function(location) {
             const icon = location.visited ? visitedIcon : placeIcon;
@@ -306,9 +375,34 @@ class LocationData:
             if (location.visited) popupContent += `<span style="color: green;">✓ Visited</span><br>`;
             if (location.note) popupContent += `Note: ${location.note}`;
             
+            // Add image gallery to popup if images exist
+            if (location.images && location.images.length > 0) {
+                const galleryId = 'gallery-' + location.name.replace(/[^a-zA-Z0-9]/g, '-');
+                galleryStates.set(galleryId, 0); // Initialize at first image
+                
+                popupContent += `<div class="popup-image-gallery" id="${galleryId}">`;
+                location.images.forEach((imgPath, index) => {
+                    popupContent += `<img src="${imgPath}" class="${index === 0 ? 'active' : ''}" alt="Image ${index + 1}">`;
+                });
+                
+                if (location.images.length > 1) {
+                    popupContent += `<div class="popup-gallery-controls">`;
+                    popupContent += `<button class="popup-nav-btn" onclick="navigatePopupGallery('${galleryId}', -1)">← Prev</button>`;
+                    popupContent += `<span class="popup-counter" id="${galleryId}-counter">1 / ${location.images.length}</span>`;
+                    popupContent += `<button class="popup-nav-btn" onclick="navigatePopupGallery('${galleryId}', 1)">Next →</button>`;
+                    popupContent += `</div>`;
+                }
+                popupContent += `</div>`;
+            }
+            
             marker.bindPopup(popupContent);
             
-            // Add click handler for routing
+            // Show popup on hover
+            marker.on('mouseover', function() {
+                marker.openPopup();
+            });
+            
+            // Add click handler for routing (but keep popup open)
             marker.on('click', function() {
                 handleMarkerClick(location, marker);
             });
@@ -318,6 +412,11 @@ class LocationData:
         const universityMarker = L.marker([51.2229654, 4.4102137], {icon: universityIcon})
             .addTo(map)
             .bindPopup('<strong>University of Antwerp - Stadscampus</strong><br>Prinsstraat 13, 2000 Antwerpen');
+        
+        // Show popup on hover
+        universityMarker.on('mouseover', function() {
+            universityMarker.openPopup();
+        });
         
         universityMarker.on('click', function() {
             handleMarkerClick({
@@ -414,6 +513,36 @@ class LocationData:
             
             // Hide travel info
             document.getElementById('travelInfo').style.display = 'none';
+        }
+        
+        function navigatePopupGallery(galleryId, direction) {
+            const gallery = document.getElementById(galleryId);
+            if (!gallery) return;
+            
+            const images = gallery.querySelectorAll('img');
+            const counter = document.getElementById(galleryId + '-counter');
+            
+            // Find current active image
+            let currentIndex = 0;
+            images.forEach((img, index) => {
+                if (img.classList.contains('active')) {
+                    currentIndex = index;
+                    img.classList.remove('active');
+                }
+            });
+            
+            // Calculate new index
+            currentIndex += direction;
+            if (currentIndex < 0) currentIndex = images.length - 1;
+            if (currentIndex >= images.length) currentIndex = 0;
+            
+            // Show new image
+            images[currentIndex].classList.add('active');
+            
+            // Update counter
+            if (counter) {
+                counter.textContent = `${currentIndex + 1} / ${images.length}`;
+            }
         }
     </script>
 </body>

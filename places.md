@@ -5,6 +5,7 @@
 - Cuisine: Middle Eastern 
 - Price range: $
 - Note: Very tasty falafel wrap. Place is small and only has around 8 seats, place outside on a terrace. There were heating lamps. A bit pricey for a wrap at 9.5€
+- pics: images/munji
 
 ---
 
