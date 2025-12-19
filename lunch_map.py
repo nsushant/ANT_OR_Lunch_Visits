@@ -358,6 +358,11 @@ class LocationData:
             className: 'custom-marker'
         });
         
+        // Close pinned popups when clicking on the map (not on a marker)
+        map.on('click', function() {
+            closeAllPinnedPopups();
+        });
+        
         // Store gallery states for each marker
         const galleryStates = new Map();
         
@@ -511,6 +516,14 @@ class LocationData:
             pinnedMarkers.delete(universityMarker);
         });
         
+        function closeAllPinnedPopups() {
+            // Close all pinned popups and clear the set
+            pinnedMarkers.forEach(function(marker) {
+                marker.closePopup();
+            });
+            pinnedMarkers.clear();
+        }
+        
         function handleMarkerClick(location, marker) {
             if (selectedMarkers.length >= 2) {
                 clearSelection();
@@ -533,6 +546,9 @@ class LocationData:
         
         function calculateRoute() {
             if (selectedMarkers.length !== 2) return;
+            
+            // Close all pinned popups when showing a route
+            closeAllPinnedPopups();
             
             const start = selectedMarkers[0].location.coordinates;
             const end = selectedMarkers[1].location.coordinates;
