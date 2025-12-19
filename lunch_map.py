@@ -361,6 +361,17 @@ class LocationData:
         // Store gallery states for each marker
         const galleryStates = new Map();
         
+        // Track pinned popups (clicked to stay open)
+        const pinnedMarkers = new Set();
+        let isHoveringPopup = false;
+        
+        // Function to convert markdown links to HTML
+        function markdownLinksToHtml(text) {
+            if (!text) return text;
+            // Convert markdown links [text](url) to HTML <a> tags
+            return text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+        }
+        
         // Add markers
         locations.forEach(function(location) {
             const icon = location.visited ? visitedIcon : placeIcon;
@@ -373,7 +384,7 @@ class LocationData:
             if (location.cuisine) popupContent += `Cuisine: ${location.cuisine}<br>`;
             if (location.price_range) popupContent += `Price: ${location.price_range}<br>`;
             if (location.visited) popupContent += `<span style="color: green;">✓ Visited</span><br>`;
-            if (location.note) popupContent += `Note: ${location.note}`;
+            if (location.note) popupContent += `Note: ${markdownLinksToHtml(location.note)}`;
             
             // Add image gallery to popup if images exist
             if (location.images && location.images.length > 0) {
@@ -395,34 +406,109 @@ class LocationData:
                 popupContent += `</div>`;
             }
             
-            marker.bindPopup(popupContent);
+            marker.bindPopup(popupContent, {
+                closeOnClick: false,
+                autoClose: false,
+                closeButton: true
+            });
             
             // Show popup on hover
             marker.on('mouseover', function() {
                 marker.openPopup();
             });
             
-            // Add click handler for routing (but keep popup open)
-            marker.on('click', function() {
+            // Close popup when mouse leaves (with delay to check if moving to popup)
+            marker.on('mouseout', function() {
+                setTimeout(function() {
+                    // Only close if not hovering popup and not pinned
+                    if (!isHoveringPopup && !pinnedMarkers.has(marker)) {
+                        marker.closePopup();
+                    }
+                }, 100);
+            });
+            
+            // Pin popup on click (keep it open)
+            marker.on('click', function(e) {
+                pinnedMarkers.add(marker);
+                marker.openPopup();
                 handleMarkerClick(location, marker);
+            });
+            
+            // Setup popup event listeners when popup opens
+            marker.on('popupopen', function() {
+                const popupElement = marker.getPopup().getElement();
+                
+                popupElement.addEventListener('mouseenter', function() {
+                    isHoveringPopup = true;
+                });
+                
+                popupElement.addEventListener('mouseleave', function() {
+                    isHoveringPopup = false;
+                    // Close popup if not pinned
+                    if (!pinnedMarkers.has(marker)) {
+                        marker.closePopup();
+                    }
+                });
+            });
+            
+            // Unpin when popup closes
+            marker.on('popupclose', function() {
+                pinnedMarkers.delete(marker);
             });
         });
         
         // Add University of Antwerp Stadscampus marker
         const universityMarker = L.marker([51.2229654, 4.4102137], {icon: universityIcon})
             .addTo(map)
-            .bindPopup('<strong>University of Antwerp - Stadscampus</strong><br>Prinsstraat 13, 2000 Antwerpen');
+            .bindPopup('<strong>University of Antwerp - Stadscampus</strong><br>Prinsstraat 13, 2000 Antwerpen', {
+                closeOnClick: false,
+                autoClose: false,
+                closeButton: true
+            });
         
         // Show popup on hover
         universityMarker.on('mouseover', function() {
             universityMarker.openPopup();
         });
         
+        // Close popup when mouse leaves (with delay)
+        universityMarker.on('mouseout', function() {
+            setTimeout(function() {
+                if (!isHoveringPopup && !pinnedMarkers.has(universityMarker)) {
+                    universityMarker.closePopup();
+                }
+            }, 100);
+        });
+        
+        // Pin on click
         universityMarker.on('click', function() {
+            pinnedMarkers.add(universityMarker);
+            universityMarker.openPopup();
             handleMarkerClick({
                 name: 'University of Antwerp - Stadscampus',
                 coordinates: [51.2229654, 4.4102137]
             }, universityMarker);
+        });
+        
+        // Setup popup hover handling
+        universityMarker.on('popupopen', function() {
+            const popupElement = universityMarker.getPopup().getElement();
+            
+            popupElement.addEventListener('mouseenter', function() {
+                isHoveringPopup = true;
+            });
+            
+            popupElement.addEventListener('mouseleave', function() {
+                isHoveringPopup = false;
+                if (!pinnedMarkers.has(universityMarker)) {
+                    universityMarker.closePopup();
+                }
+            });
+        });
+        
+        // Unpin when popup closes
+        universityMarker.on('popupclose', function() {
+            pinnedMarkers.delete(universityMarker);
         });
         
         function handleMarkerClick(location, marker) {

@@ -13,7 +13,8 @@
 - Location: Breydelstraat 16, 2018 Antwerpen
 - Cuisine: Thai 
 - Price range: $$
-- Note: More of a sit down restaurant (heavier, real meal), but casual. Prices for dishes are 12-18 EUR depending on what you get. 
+- Note: More of a sit down restaurant (heavier, real meal), but casual. Prices for dishes are 12-18 EUR depending on what you get. Here, you the [menu](https://de.cdn-website.com/3353011bf29947999eff0661ce2f3bfa/DESKTOP/pdf/menu.pdf).
+- pics: images/tjoung
 
 ---
 
@@ -21,7 +22,8 @@
 - Location: Paardenmarkt 117, 2000 Antwerpen
 - Cuisine: Greek, European 
 - Price range: $
-- Note: Coffee shop (coffee itself is good here), it has savory pastries too, with feta cheese and spinach so it can be a smaller lunch too. It can be busy at times.  
+- Note: Coffee shop (coffee itself is good here), it has savory pastries too, with feta cheese and spinach so it can be a smaller lunch too. It can be busy at times.
+- pics: images/koffieDealers
 
 ---
 
@@ -29,7 +31,8 @@
 - Location: Vlasmarkt 22, 2000 Antwerpen
 - Cuisine: Viet 
 - Price range: $
-- Note: Viet coffee place. It has spring rolls and bahn mi too. Smaller place, few seats inside. 
+- Note: Viet coffee place. It has spring rolls and bahn mi too. Smaller place, few seats inside. Here is the [menu](https://orderbilly.com/events/4edb66aa-b43c-477d-8ba7-221ad4961db0). 
+- pics: images/phiin 
 
 ---
 
@@ -38,6 +41,7 @@
 - Cuisine: Venezuelan
 - Price range: $$
 - Note: Arepas (corn based pastry with savory ingredients inside, like beef, guacamole etc.) A bit pricey now, for what you get (might be small). It was tasty last time I went. 
+- pics: images/arepa
 
 ---
 
