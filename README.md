@@ -10,6 +10,7 @@ This repo helps us:
 * Decide where to go next more easily
 
 You can see a preview of the map here :https://nsushant.github.io/ANT_OR_Lunch_Visits/lunch_map.html 
+Double click an image tp view in full size. 
 
 ---
 

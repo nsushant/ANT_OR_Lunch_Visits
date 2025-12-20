@@ -275,6 +275,7 @@ class LocationData:
             border-radius: 4px;
             margin-bottom: 8px;
             display: none;
+            cursor: pointer;
         }
         .popup-image-gallery img.active {
             display: block;
@@ -453,6 +454,14 @@ class LocationData:
                     if (!pinnedMarkers.has(marker)) {
                         marker.closePopup();
                     }
+                });
+                
+                // Add double-click handler to images
+                const images = popupElement.querySelectorAll('.popup-image-gallery img');
+                images.forEach(function(img) {
+                    img.addEventListener('dblclick', function() {
+                        window.open(img.src, '_blank');
+                    });
                 });
             });
             
