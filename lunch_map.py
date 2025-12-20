@@ -16,6 +16,7 @@ class LocationData:
         self.places = []
         self.lunch_log = []
         self.geocoded_cache = {}  # Cache for batch geocoded addresses
+        self.cache_file = 'geocode_cache.json'  # File to persist geocode results
         # Initialize geopy geocoder 
         self.geolocator = Nominatim(user_agent="LunchMap/1.0 (educational purpose)")
         self.geocode = RateLimiter(self.geolocator.geocode, min_delay_seconds=1)
@@ -25,6 +26,33 @@ class LocationData:
             'University of Antwerp - Stadscampus': (51.2229654, 4.4102137)
         }
         
+        # Load cached geocode results
+        self.load_geocode_cache()
+        
+    def load_geocode_cache(self):
+        """Load geocoded results from cache file"""
+        try:
+            with open(self.cache_file, 'r', encoding='utf-8') as f:
+                cached_data = json.load(f)
+                # Convert string tuples back to tuples
+                self.geocoded_cache = {addr: tuple(coords) for addr, coords in cached_data.items()}
+                print(f"Loaded {len(self.geocoded_cache)} cached geocode results from {self.cache_file}")
+        except FileNotFoundError:
+            print(f"No cache file found. Will create {self.cache_file} after geocoding.")
+            self.geocoded_cache = {}
+        except Exception as e:
+            print(f"Error loading cache: {e}. Starting with empty cache.")
+            self.geocoded_cache = {}
+    
+    def save_geocode_cache(self):
+        """Save geocoded results to cache file"""
+        try:
+            with open(self.cache_file, 'w', encoding='utf-8') as f:
+                json.dump(self.geocoded_cache, f, indent=2)
+                print(f"Saved {len(self.geocoded_cache)} geocode results to {self.cache_file}")
+        except Exception as e:
+            print(f"Error saving cache: {e}")
+    
     def parse_places_md(self, content: str) -> List[Dict]:
         """Parse places.md to extract location information"""
         places = []
@@ -115,15 +143,27 @@ class LocationData:
     
     def batch_geocode_addresses(self, addresses: List[str]) -> Dict[str, Tuple[float, float]]:
         """Batch geocode all unique addresses at once"""
-        print(f"Starting batch geocoding for {len(addresses)} unique addresses...")
+        # Start with cached results
+        geocoded_results = dict(self.geocoded_cache)
         
-        geocoded_results = {}
+        # Filter out addresses that are already cached
+        addresses_to_geocode = [addr for addr in addresses if addr not in geocoded_results]
+        
+        if not addresses_to_geocode:
+            print("All addresses found in cache. No geocoding needed.")
+            return geocoded_results
+        
+        print(f"Found {len(addresses) - len(addresses_to_geocode)} addresses in cache.")
+        print(f"Starting geocoding for {len(addresses_to_geocode)} new addresses...")
+        
         failed_addresses = []
+        new_geocoded_count = 0
         
-        for i, address in enumerate(addresses):
+        for i, address in enumerate(addresses_to_geocode):
             if address in self.fallback_coordinates:
                 print(f"Using fallback coordinates for: {address}")
                 geocoded_results[address] = self.fallback_coordinates[address]
+                new_geocoded_count += 1
                 continue
                 
             try:
@@ -133,13 +173,14 @@ class LocationData:
                 else:
                     full_address = address
                 
-                print(f"Geocoding {i+1}/{len(addresses)}: {address}")
+                print(f"Geocoding {i+1}/{len(addresses_to_geocode)}: {address}")
                 
                 # Use rate limiter for batch processing to be safe
                 location = self.geocode(full_address)
                 
                 if location:
                     geocoded_results[address] = (location.latitude, location.longitude)
+                    new_geocoded_count += 1
                     print(f"  ✓ Success: ({location.latitude}, {location.longitude})")
                 else:
                     failed_addresses.append(address)
@@ -159,7 +200,12 @@ class LocationData:
             print(f"Using default Antwerp coordinates for failed address: {address}")
             geocoded_results[address] = (51.2054, 4.4132)
         
-        print(f"Batch geocoding completed. {len(geocoded_results) - len(failed_addresses)} successful, {len(failed_addresses)} failed.")
+        if addresses_to_geocode:
+            print(f"Batch geocoding completed. {new_geocoded_count} new addresses geocoded successfully, {len(failed_addresses)} failed.")
+            # Save updated cache to file
+            self.geocoded_cache = geocoded_results
+            self.save_geocode_cache()
+        
         return geocoded_results
     
     def load_data(self):
