@@ -216,6 +216,10 @@ class LocationData:
     
     def generate_map_html(self) -> str:
         """Generate HTML for interactive map"""
+        # Load images for University of Antwerp
+        ua_images = self.get_images_from_directory('images/UA')
+        print(f"Found {len(ua_images)} image(s) for University of Antwerp")
+        
         html_template = """
 <!DOCTYPE html>
 <html>
@@ -472,9 +476,32 @@ class LocationData:
         });
         
         // Add University of Antwerp Stadscampus marker
+        const uaImages = {ua_images_data};
+        let uaPopupContent = '<strong>University of Antwerp - Stadscampus</strong><br>Prinsstraat 13, 2000 Antwerpen';
+        
+        // Add image gallery to UA popup if images exist
+        if (uaImages && uaImages.length > 0) {
+            const galleryId = 'gallery-UA';
+            galleryStates.set(galleryId, 0);
+            
+            uaPopupContent += `<div class="popup-image-gallery" id="${galleryId}">`;
+            uaImages.forEach((imgPath, index) => {
+                uaPopupContent += `<img src="${imgPath}" class="${index === 0 ? 'active' : ''}" alt="Image ${index + 1}">`;
+            });
+            
+            if (uaImages.length > 1) {
+                uaPopupContent += `<div class="popup-gallery-controls">`;
+                uaPopupContent += `<button class="popup-nav-btn" onclick="navigatePopupGallery('${galleryId}', -1)">← Prev</button>`;
+                uaPopupContent += `<span class="popup-counter" id="${galleryId}-counter">1 / ${uaImages.length}</span>`;
+                uaPopupContent += `<button class="popup-nav-btn" onclick="navigatePopupGallery('${galleryId}', 1)">Next →</button>`;
+                uaPopupContent += `</div>`;
+            }
+            uaPopupContent += `</div>`;
+        }
+        
         const universityMarker = L.marker([51.2229654, 4.4102137], {icon: universityIcon})
             .addTo(map)
-            .bindPopup('<strong>University of Antwerp - Stadscampus</strong><br>Prinsstraat 13, 2000 Antwerpen', {
+            .bindPopup(uaPopupContent, {
                 closeOnClick: false,
                 autoClose: false,
                 closeButton: true
@@ -517,6 +544,14 @@ class LocationData:
                 if (!pinnedMarkers.has(universityMarker)) {
                     universityMarker.closePopup();
                 }
+            });
+            
+            // Add double-click handler to images
+            const images = popupElement.querySelectorAll('.popup-image-gallery img');
+            images.forEach(function(img) {
+                img.addEventListener('dblclick', function() {
+                    window.open(img.src, '_blank');
+                });
             });
         });
         
@@ -662,8 +697,9 @@ class LocationData:
         
         # Prepare location data for JavaScript
         locations_data = json.dumps([place for place in self.places if 'coordinates' in place])
+        ua_images_data = json.dumps(ua_images)
         
-        return html_template.replace('{locations_data}', locations_data)
+        return html_template.replace('{locations_data}', locations_data).replace('{ua_images_data}', ua_images_data)
     
     def create_map(self, output_file: str = 'lunch_map.html'):
         """Main method to create the map"""
