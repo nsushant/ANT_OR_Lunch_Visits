@@ -50,6 +50,7 @@
 - Cuisine: Afghan
 - Price range: $$
 - Note: Large restaurant, also sit-down type. Prices are not so high, 10-15 EUR approximatley. Has many options and has a lot of room.
+- pics: images/darbar
 
 ---
 
@@ -57,7 +58,8 @@
 - Location: Lange Zavelstraat 40, 2060 Antwerpen
 - Cuisine: Morrocan 
 - Price range: $
-- Note: Morrocan breakfast and lunch place, not so expensive. Just a bit more far from the university.
+- Note: Morrocan breakfast and lunch place, not so expensive. Just a bit more far from the university. Here is the [menu](https://ovanos.be/menu/)
+- pics; images/ovanos
 
 ---
 
@@ -66,7 +68,7 @@
 - Cuisine: American (?) 
 - Price range: $$
 - Note: "Gourmet" burger place. Lunch menu and student menu at 12.5 EUR, no drinks included. Other options more expensive.
-
+- pics: images/ellis
 ---
 
 - Name: Aydo
@@ -74,6 +76,7 @@
 - Cuisine: Lebanese
 - Price range: $
 - Note: Lebanese wraps, limited seating space.
+- pics: images/aydo
 
 ---
 
@@ -81,7 +84,8 @@
 - Location: Grote Markt 35, 2000 Antwerpen
 - Cuisine: Greek
 - Price range: $
-- Note: Greek wraps.
+- Note: Greek wraps. Here is the [menu](https://www.souvlakeri.be/Menu-Restaurant). 
+- pics: images/souvla
 
 ---
 
@@ -89,7 +93,8 @@
 - Location: Korte Koepoortstraat 8, 2000 Antwerpen
 - Cuisine: Viet
 - Price range: $-$$
-- Note: Vietnamese sandwhiches.
+- Note: Vietnamese sandwhiches. [Menu](https://banhmiantwerp.be/en/menu/5101513665207599213)
+- pics: images/bahnMi
 
 ---
 
@@ -98,6 +103,7 @@
 - Cuisine: "Asian"
 - Price range: $
 - Note: Wok place, most likely for takeaway. 
+- pics: images/lhasa
 
 ---
 
@@ -106,6 +112,7 @@
 - Cuisine: Belgian
 - Price range: $
 - Note: Sandwhich place, it has burgers too. 
+- pics: images/peca
 
 ---
 
@@ -113,7 +120,8 @@
 - Location: Statiestraat 18, 2018 Antwerpen
 - Cuisine: Lebanese BBQ
 - Price range: $-$$
-- Note: BBQ place, relatively cheap. It has falafel and kibbeh too (veggie).
+- Note: BBQ place, relatively cheap (9-12 EUR). It has falafel and kibbeh too (veggie).
+- pics: images/mandarin
 
 ---
 
@@ -121,6 +129,7 @@
 - Location: Sint-Jansplein 55, 2060 Antwerpen
 - Cuisine: Iraq
 - Price range: $-$$
-- Note: Iraqi place, cheap-ish. 
+- Note: Iraqi place, cheap-ish 7-12 EUR. 
+- pics: images/omar
 
 ---
