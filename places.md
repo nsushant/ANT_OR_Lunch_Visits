@@ -59,7 +59,7 @@
 - Cuisine: Morrocan 
 - Price range: $
 - Note: Morrocan breakfast and lunch place, not so expensive. Just a bit more far from the university. Here is the [menu](https://ovanos.be/menu/)
-- pics; images/ovanos
+- pics: images/ovanos
 
 ---
 
