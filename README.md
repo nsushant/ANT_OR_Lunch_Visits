@@ -64,9 +64,15 @@ We've added an interactive voting system to help decide where to go!
 - **Rank 3** = 1 point 🥉
 
 **Rules:**
+- Each rank can only be used once (you can vote for max 3 restaurants)
 - Each person can only vote once per restaurant
 - Your votes are saved in your browser
 - View all rankings on the **Rankings** page
+
+**Managing Your Votes:**
+- Click **"🗳️ My Votes"** on the rankings page to see your current votes
+- You can **undo any vote** if you change your mind
+- After undoing, that rank becomes available again for another restaurant
 
 > **Coming Soon:** User profiles to track your voting history and preferences!
 
