@@ -9,8 +9,14 @@ This repo helps us:
 * Share recommendations and notes
 * Decide where to go next more easily
 
-You can see a preview of the map here :https://nsushant.github.io/ANT_OR_Lunch_Visits/lunch_map.html 
-Double click an image tp view in full size. 
+You can see a preview of the map here: https://nsushant.github.io/ANT_OR_Lunch_Visits/lunch_map.html 
+Double click an image to view in full size.
+
+**Features:**
+- 🗺️ Interactive map with all lunch locations
+- 🗳️ Vote for your favorite restaurants
+- 🏆 View rankings based on community votes
+- 📸 Photo galleries for each location 
 
 ---
 
@@ -33,9 +39,36 @@ It’s intentionally lightweight and low-maintenance.
 .
 ├── lunch_log.md      # Main log of lunch visits / reviews
 ├── places.md         # Master list of lunch spots visited before
-├── wishlist.md       # Places we want to try but nobody has visited 
+├── wishlist.md       # Places we want to try but nobody has visited
+├── lunch_map.html    # Interactive map of lunch locations
+├── ranking.html      # Restaurant rankings based on votes
 └── README.md         # You are here
 ```
+
+---
+
+## 🗳️ Voting System
+
+We've added an interactive voting system to help decide where to go!
+
+**How to Vote:**
+1. Open `lunch_map.html` in your browser
+2. Enter your name to access the map
+3. Click on any restaurant marker
+4. Click the **"🗳️ Vote"** button
+5. Give it a rank: 1, 2, or 3
+
+**Point System:**
+- **Rank 1** = 3 points 🥇
+- **Rank 2** = 2 points 🥈
+- **Rank 3** = 1 point 🥉
+
+**Rules:**
+- Each person can only vote once per restaurant
+- Your votes are saved in your browser
+- View all rankings on the **Rankings** page
+
+> **Coming Soon:** User profiles to track your voting history and preferences!
 
 ---
 

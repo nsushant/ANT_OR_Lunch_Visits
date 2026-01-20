@@ -447,9 +447,105 @@ class LocationData:
             margin-top: 5px;
             display: none;
         }
+        .login-overlay {
+            display: block;
+            position: fixed;
+            z-index: 3000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+        }
+        .login-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 40px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        .login-content h2 {
+            color: #4CAF50;
+            margin-bottom: 10px;
+        }
+        .login-content p {
+            color: #666;
+            margin-bottom: 25px;
+        }
+        .login-input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        .login-input:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        .login-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .login-btn:hover {
+            background: #45a049;
+        }
+        .user-info {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            z-index: 1000;
+            font-size: 14px;
+        }
+        .logout-btn {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .logout-btn:hover {
+            background: #da190b;
+        }
     </style>
 </head>
 <body>
+    <!-- Login Overlay -->
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-content">
+            <h2>🍴 Welcome to Lunch Map!</h2>
+            <p>Please enter your name to continue</p>
+            <input type="text" id="loginName" class="login-input" placeholder="Your name" />
+            <button class="login-btn" onclick="login()">➡️ Enter Map</button>
+        </div>
+    </div>
+    
+    <!-- User Info -->
+    <div id="userInfo" class="user-info" style="display: none;">
+        <span>Logged in as: <strong id="currentUser"></strong></span>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+    
     <a href="ranking.html" class="ranking-button">🏆 View Rankings</a>
     
     <div id="map"></div>
@@ -475,8 +571,7 @@ class LocationData:
     <div id="voteModal" class="vote-modal">
         <div class="vote-modal-content">
             <h3>Vote for <span id="voteRestaurantName"></span></h3>
-            <p>Enter your name and rank (1, 2, or 3)</p>
-            <input type="text" id="voterName" class="vote-input" placeholder="Your name" />
+            <p>Give your rank (1, 2, or 3)</p>
             <input type="number" id="voteRank" class="vote-input" placeholder="Rank (1, 2, or 3)" min="1" max="3" />
             <div class="vote-error" id="voteError"></div>
             <div style="margin-top: 15px;">
@@ -854,11 +949,55 @@ class LocationData:
         
         // Voting functionality
         let currentVotingRestaurant = null;
+        let currentUser = null;
+        
+        // Check if user is already logged in
+        function checkLogin() {
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                currentUser = savedUser;
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('userInfo').style.display = 'block';
+                document.getElementById('currentUser').textContent = currentUser;
+            }
+        }
+        
+        function login() {
+            const nameInput = document.getElementById('loginName').value.trim();
+            if (!nameInput) {
+                alert('Please enter your name');
+                return;
+            }
+            currentUser = nameInput;
+            localStorage.setItem('currentUser', currentUser);
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('userInfo').style.display = 'block';
+            document.getElementById('currentUser').textContent = currentUser;
+        }
+        
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                currentUser = null;
+                localStorage.removeItem('currentUser');
+                document.getElementById('loginOverlay').style.display = 'block';
+                document.getElementById('userInfo').style.display = 'none';
+                document.getElementById('loginName').value = '';
+            }
+        }
+        
+        // Initialize login check
+        checkLogin();
+        
+        // Allow Enter key to login
+        document.getElementById('loginName').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
         
         function openVoteModal(restaurantName) {
             currentVotingRestaurant = restaurantName;
             document.getElementById('voteRestaurantName').textContent = restaurantName;
-            document.getElementById('voterName').value = '';
             document.getElementById('voteRank').value = '';
             document.getElementById('voteError').style.display = 'none';
             document.getElementById('voteModal').style.display = 'block';
@@ -870,17 +1009,10 @@ class LocationData:
         }
         
         function submitVote() {
-            const voterName = document.getElementById('voterName').value.trim();
             const voteRank = parseInt(document.getElementById('voteRank').value);
             const errorDiv = document.getElementById('voteError');
             
-            // Validate inputs
-            if (!voterName) {
-                errorDiv.textContent = 'Please enter your name';
-                errorDiv.style.display = 'block';
-                return;
-            }
-            
+            // Validate rank
             if (!voteRank || ![1, 2, 3].includes(voteRank)) {
                 errorDiv.textContent = 'Rank must be 1, 2, or 3';
                 errorDiv.style.display = 'block';
@@ -890,26 +1022,35 @@ class LocationData:
             // Get existing votes from localStorage
             const votes = JSON.parse(localStorage.getItem('restaurantVotes') || '{}');
             
-            // Check if this voter has already voted for this rank on this restaurant
+            // Check if user has already used this rank for ANY restaurant
+            for (const restaurantName in votes) {
+                if (votes[restaurantName][currentUser] === voteRank) {
+                    errorDiv.textContent = `You have already used rank ${voteRank} for ${restaurantName}. Each rank can only be used once.`;
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+            }
+            
+            // Initialize restaurant votes if not exists
             if (!votes[currentVotingRestaurant]) {
                 votes[currentVotingRestaurant] = {};
             }
             
-            // Check if voter already voted for this restaurant
-            if (votes[currentVotingRestaurant][voterName]) {
-                errorDiv.textContent = `${voterName} has already voted for ${currentVotingRestaurant} with rank ${votes[currentVotingRestaurant][voterName]}`;
+            // Check if user already voted for this restaurant
+            if (votes[currentVotingRestaurant][currentUser]) {
+                errorDiv.textContent = `You have already voted for ${currentVotingRestaurant} with rank ${votes[currentVotingRestaurant][currentUser]}`;
                 errorDiv.style.display = 'block';
                 return;
             }
             
             // Add the vote
-            votes[currentVotingRestaurant][voterName] = voteRank;
+            votes[currentVotingRestaurant][currentUser] = voteRank;
             
             // Save to localStorage
             localStorage.setItem('restaurantVotes', JSON.stringify(votes));
             
             // Success feedback
-            alert(`Vote submitted! ${voterName} gave rank ${voteRank} to ${currentVotingRestaurant}`);
+            alert(`Vote submitted! You gave rank ${voteRank} to ${currentVotingRestaurant}`);
             closeVoteModal();
         }
         

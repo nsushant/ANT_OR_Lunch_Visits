@@ -43,6 +43,23 @@
             background: #45a049;
         }
         
+        .reset-button {
+            display: none;
+            padding: 10px 20px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin-left: 10px;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-size: 14px;
+        }
+        
+        .reset-button:hover {
+            background: #da190b;
+        }
+        
         table {
             width: 100%;
             border-collapse: collapse;
@@ -126,6 +143,7 @@
 <body>
     <div class="container">
         <a href="lunch_map.html" class="back-button">← Back to Map</a>
+        <button id="resetButton" class="reset-button" onclick="resetRankings()">🗑️ Reset All Rankings</button>
         
         <h1>🏆 Restaurant Rankings</h1>
         
@@ -146,6 +164,26 @@
     </div>
 
     <script>
+        // Check if user is admin and show reset button
+        function checkAdminAccess() {
+            const currentUser = localStorage.getItem('currentUser');
+            if (currentUser === 'Bryan' || currentUser === 'Admin') {
+                document.getElementById('resetButton').style.display = 'inline-block';
+            }
+        }
+        
+        // Reset all rankings
+        function resetRankings() {
+            if (confirm('Are you sure you want to reset ALL rankings? This action cannot be undone!')) {
+                localStorage.removeItem('restaurantVotes');
+                alert('All rankings have been reset!');
+                renderRankings();
+            }
+        }
+        
+        // Initialize admin check
+        checkAdminAccess();
+        
         // Restaurant data from places.md
         const restaurants = [
             {"name": "Munji", "cuisine": "Middle Eastern", "price_range": "$"},
