@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Restaurant Rankings</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .back-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            transition: background 0.3s;
+        }
+        
+        .back-button:hover {
+            background: #45a049;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        thead {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        th {
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        th:hover {
+            background: #45a049;
+        }
+        
+        th.sortable::after {
+            content: ' ⇅';
+            opacity: 0.5;
+        }
+        
+        th.sorted-asc::after {
+            content: ' ↑';
+            opacity: 1;
+        }
+        
+        th.sorted-desc::after {
+            content: ' ↓';
+            opacity: 1;
+        }
+        
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        tbody tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        tbody tr:nth-child(even) {
+            background-color: #f5f5f5;
+        }
+        
+        tbody tr:nth-child(even):hover {
+            background-color: #efefef;
+        }
+        
+        .rank-cell {
+            font-weight: bold;
+            color: #4CAF50;
+            font-size: 18px;
+        }
+        
+        .points-cell {
+            font-weight: bold;
+            color: #2196F3;
+            font-size: 16px;
+        }
+        
+        .gold {
+            color: #FFD700;
+        }
+        
+        .silver {
+            color: #C0C0C0;
+        }
+        
+        .bronze {
+            color: #CD7F32;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="lunch_map.html" class="back-button">← Back to Map</a>
+        
+        <h1>🏆 Restaurant Rankings</h1>
+        
+        <table id="rankingTable">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th class="sortable" data-column="name">Name</th>
+                    <th class="sortable" data-column="cuisine">Cuisine</th>
+                    <th class="sortable" data-column="price">Price Range</th>
+                    <th class="sortable" data-column="points">Points</th>
+                </tr>
+            </thead>
+            <tbody id="rankingBody">
+                <!-- Rankings will be inserted here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Restaurant data from places.md
+        const restaurants = [
+            {"name": "Munji", "cuisine": "Middle Eastern", "price_range": "$"},
+            {"name": "Tjoung Tjoung", "cuisine": "Thai", "price_range": "$$"},
+            {"name": "Koffie Dealers", "cuisine": "Greek, European", "price_range": "$"},
+            {"name": "Phiin Cà Phê", "cuisine": "Viet", "price_range": "$"},
+            {"name": "Arepa culture Antwerpen 🇻🇪", "cuisine": "Venezuelan", "price_range": "$$"},
+            {"name": "Afghan Darbar Restaurant", "cuisine": "Afghan", "price_range": "$$"},
+            {"name": "Ovanos", "cuisine": "Morrocan", "price_range": "$"},
+            {"name": "Ellis Gourmet Burger Eilandje", "cuisine": "American (?)", "price_range": "$$"},
+            {"name": "Aydo", "cuisine": "Lebanese", "price_range": "$"},
+            {"name": "Souvlakeri", "cuisine": "Greek", "price_range": "$"},
+            {"name": "Banh Mi Antwerp", "cuisine": "Viet", "price_range": "$-$$"},
+            {"name": "Lhasa Wok", "cuisine": "\"Asian\"", "price_range": "$"},
+            {"name": "Broodjeszaak Te Peca", "cuisine": "Belgian", "price_range": "$"},
+            {"name": "Mandarin", "cuisine": "Lebanese BBQ", "price_range": "$-$$"},
+            {"name": "Snack omar", "cuisine": "Iraq", "price_range": "$-$$"}
+        ];
+        
+        let currentSort = {
+            column: 'points',
+            direction: 'desc'
+        };
+        
+        // Calculate points for each restaurant from votes stored in localStorage
+        function calculatePoints() {
+            const votes = JSON.parse(localStorage.getItem('restaurantVotes') || '{}');
+            const points = {};
+            
+            // Initialize all restaurants with 0 points
+            restaurants.forEach(restaurant => {
+                points[restaurant.name] = 0;
+            });
+            
+            // Calculate points from votes
+            // votes structure: { "Restaurant Name": { "VoterName": rank, ... }, ... }
+            for (const restaurantName in votes) {
+                const restaurantVotes = votes[restaurantName];
+                for (const voterName in restaurantVotes) {
+                    const rank = restaurantVotes[voterName];
+                    if (rank === 1) points[restaurantName] += 3;
+                    else if (rank === 2) points[restaurantName] += 2;
+                    else if (rank === 3) points[restaurantName] += 1;
+                }
+            }
+            
+            return points;
+        }
+        
+        // Sort restaurants
+        function sortRestaurants(data, column, direction) {
+            const sorted = [...data];
+            
+            sorted.sort((a, b) => {
+                let aVal, bVal;
+                
+                if (column === 'points') {
+                    aVal = a.points;
+                    bVal = b.points;
+                } else if (column === 'name') {
+                    aVal = a.name.toLowerCase();
+                    bVal = b.name.toLowerCase();
+                } else if (column === 'cuisine') {
+                    aVal = a.cuisine.toLowerCase();
+                    bVal = b.cuisine.toLowerCase();
+                } else if (column === 'price') {
+                    aVal = a.price_range;
+                    bVal = b.price_range;
+                }
+                
+                if (aVal < bVal) return direction === 'asc' ? -1 : 1;
+                if (aVal > bVal) return direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+            
+            return sorted;
+        }
+        
+        // Render rankings table
+        function renderRankings() {
+            const points = calculatePoints();
+            
+            // Create restaurant data with points
+            const restaurantsWithPoints = restaurants.map(restaurant => ({
+                ...restaurant,
+                points: points[restaurant.name] || 0
+            }));
+            
+            // Sort by current sort settings
+            const sorted = sortRestaurants(restaurantsWithPoints, currentSort.column, currentSort.direction);
+            
+            // Render table
+            const tbody = document.getElementById('rankingBody');
+            tbody.innerHTML = '';
+            
+            sorted.forEach((restaurant, index) => {
+                const row = document.createElement('tr');
+                
+                let rankClass = 'rank-cell';
+                let rankSymbol = '';
+                if (currentSort.column === 'points' && currentSort.direction === 'desc') {
+                    if (index === 0 && restaurant.points > 0) {
+                        rankClass += ' gold';
+                        rankSymbol = '🥇 ';
+                    } else if (index === 1 && restaurant.points > 0) {
+                        rankClass += ' silver';
+                        rankSymbol = '🥈 ';
+                    } else if (index === 2 && restaurant.points > 0) {
+                        rankClass += ' bronze';
+                        rankSymbol = '🥉 ';
+                    }
+                }
+                
+                row.innerHTML = `
+                    <td class="${rankClass}">${rankSymbol}${index + 1}</td>
+                    <td>${restaurant.name}</td>
+                    <td>${restaurant.cuisine}</td>
+                    <td>${restaurant.price_range}</td>
+                    <td class="points-cell">${restaurant.points}</td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+            
+            // Update sort indicators
+            document.querySelectorAll('th.sortable').forEach(th => {
+                th.classList.remove('sorted-asc', 'sorted-desc');
+                if (th.dataset.column === currentSort.column) {
+                    th.classList.add(`sorted-${currentSort.direction}`);
+                }
+            });
+        }
+        
+        // Add click handlers for sorting
+        document.querySelectorAll('th.sortable').forEach(th => {
+            th.addEventListener('click', function() {
+                const column = this.dataset.column;
+                
+                if (currentSort.column === column) {
+                    // Toggle direction
+                    currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+                } else {
+                    // New column - default to descending for points, ascending for others
+                    currentSort.column = column;
+                    currentSort.direction = column === 'points' ? 'desc' : 'asc';
+                }
+                
+                renderRankings();
+            });
+        });
+        
+        // Initial render
+        renderRankings();
+        
+        // Update rankings every 2 seconds to reflect any new votes
+        setInterval(renderRankings, 2000);
+    </script>
+</body>
+</html>

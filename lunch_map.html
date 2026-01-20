@@ -14,6 +14,24 @@
     <style>
         body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
         #map { height: 100vh; width: 100%; }
+        .ranking-button {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            transition: background 0.3s;
+        }
+        .ranking-button:hover {
+            background: #45a049;
+        }
         .info-panel {
             position: absolute;
             top: 60px;
@@ -84,9 +102,88 @@
             font-size: 12px;
             color: #666;
         }
+        .vote-button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+            width: 100%;
+        }
+        .vote-button:hover {
+            background: #1976D2;
+        }
+        .vote-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .vote-modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .vote-modal-content h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .vote-input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        .vote-submit-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        .vote-submit-btn:hover {
+            background: #45a049;
+        }
+        .vote-cancel-btn {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .vote-cancel-btn:hover {
+            background: #da190b;
+        }
+        .vote-error {
+            color: #f44336;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
     </style>
 </head>
 <body>
+    <a href="ranking.html" class="ranking-button">🏆 View Rankings</a>
+    
     <div id="map"></div>
     
     <div class="info-panel">
@@ -104,6 +201,21 @@
     <div class="travel-info" id="travelInfo">
         <h4>Travel Information</h4>
         <div id="travelDetails"></div>
+    </div>
+    
+    <!-- Vote Modal -->
+    <div id="voteModal" class="vote-modal">
+        <div class="vote-modal-content">
+            <h3>Vote for <span id="voteRestaurantName"></span></h3>
+            <p>Enter your name and rank (1, 2, or 3)</p>
+            <input type="text" id="voterName" class="vote-input" placeholder="Your name" />
+            <input type="number" id="voteRank" class="vote-input" placeholder="Rank (1, 2, or 3)" min="1" max="3" />
+            <div class="vote-error" id="voteError"></div>
+            <div style="margin-top: 15px;">
+                <button class="vote-submit-btn" onclick="submitVote()">Submit Vote</button>
+                <button class="vote-cancel-btn" onclick="closeVoteModal()">Cancel</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -173,6 +285,9 @@
             if (location.price_range) popupContent += `Price: ${location.price_range}<br>`;
             if (location.visited) popupContent += `<span style="color: green;">✓ Visited</span><br>`;
             if (location.note) popupContent += `Note: ${markdownLinksToHtml(location.note)}`;
+            
+            // Add vote button
+            popupContent += `<button class="vote-button" onclick="openVoteModal('${location.name.replace(/'/g, "\\'")}')">🗳️ Vote</button>`;
             
             // Add image gallery to popup if images exist
             if (location.images && location.images.length > 0) {
@@ -466,6 +581,75 @@
             // Update counter
             if (counter) {
                 counter.textContent = `${currentIndex + 1} / ${images.length}`;
+            }
+        }
+        
+        // Voting functionality
+        let currentVotingRestaurant = null;
+        
+        function openVoteModal(restaurantName) {
+            currentVotingRestaurant = restaurantName;
+            document.getElementById('voteRestaurantName').textContent = restaurantName;
+            document.getElementById('voterName').value = '';
+            document.getElementById('voteRank').value = '';
+            document.getElementById('voteError').style.display = 'none';
+            document.getElementById('voteModal').style.display = 'block';
+        }
+        
+        function closeVoteModal() {
+            document.getElementById('voteModal').style.display = 'none';
+            currentVotingRestaurant = null;
+        }
+        
+        function submitVote() {
+            const voterName = document.getElementById('voterName').value.trim();
+            const voteRank = parseInt(document.getElementById('voteRank').value);
+            const errorDiv = document.getElementById('voteError');
+            
+            // Validate inputs
+            if (!voterName) {
+                errorDiv.textContent = 'Please enter your name';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            if (!voteRank || ![1, 2, 3].includes(voteRank)) {
+                errorDiv.textContent = 'Rank must be 1, 2, or 3';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            // Get existing votes from localStorage
+            const votes = JSON.parse(localStorage.getItem('restaurantVotes') || '{}');
+            
+            // Check if this voter has already voted for this rank on this restaurant
+            if (!votes[currentVotingRestaurant]) {
+                votes[currentVotingRestaurant] = {};
+            }
+            
+            // Check if voter already voted for this restaurant
+            if (votes[currentVotingRestaurant][voterName]) {
+                errorDiv.textContent = `${voterName} has already voted for ${currentVotingRestaurant} with rank ${votes[currentVotingRestaurant][voterName]}`;
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            // Add the vote
+            votes[currentVotingRestaurant][voterName] = voteRank;
+            
+            // Save to localStorage
+            localStorage.setItem('restaurantVotes', JSON.stringify(votes));
+            
+            // Success feedback
+            alert(`Vote submitted! ${voterName} gave rank ${voteRank} to ${currentVotingRestaurant}`);
+            closeVoteModal();
+        }
+        
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById('voteModal');
+            if (event.target === modal) {
+                closeVoteModal();
             }
         }
     </script>
