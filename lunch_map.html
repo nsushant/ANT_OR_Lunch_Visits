@@ -683,39 +683,39 @@
         let currentVotingRestaurant = null;
         let currentUser = null;
         
-        // JSONBlob configuration (free JSON storage, no auth needed)
-        const JSONBLOB_ID = '019be5c2-99fc-7702-b0e7-611902238818';
-        const JSONBLOB_URL = `https://jsonblob.com/api/jsonBlob/${JSONBLOB_ID}`;
+        // Cloudflare Worker URL (secure - token stored server-side)
+        // Deploy cloudflare-worker.js and paste your worker URL here
+        const WORKER_URL = 'https://lunch-votes.YOUR_SUBDOMAIN.workers.dev';
         
-        // Fetch current votes from JSONBlob
+        let cachedVotes = {};
+        
+        // Fetch current votes via Cloudflare Worker
         async function fetchGlobalVotes() {
             try {
-                const response = await fetch(JSONBLOB_URL);
+                const response = await fetch(WORKER_URL);
                 if (response.ok) {
                     const data = await response.json();
-                    return data.votes || {};
+                    cachedVotes = data.votes || {};
+                    return cachedVotes;
                 }
             } catch (error) {
                 console.error('Error fetching votes:', error);
             }
-            return {};
+            return cachedVotes;
         }
         
-        // Save votes to JSONBlob
-        async function saveVotesToServer(votes) {
-            const newContent = {
-                votes: votes,
-                lastUpdated: new Date().toISOString()
-            };
-            
-            const response = await fetch(JSONBLOB_URL, {
-                method: 'PUT',
+        // Save votes via Cloudflare Worker (secure!)
+        async function saveVotesToGitHub(votes) {
+            const response = await fetch(WORKER_URL, {
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newContent)
+                body: JSON.stringify({ votes, user: currentUser })
             });
             
-            if (!response.ok) {
-                throw new Error('Failed to save votes');
+            const result = await response.json();
+            
+            if (!response.ok || result.error) {
+                throw new Error(result.error || 'Failed to save vote');
             }
         }
         
@@ -788,12 +788,12 @@
             }
             
             try {
-                // Fetch current votes from GitHub
+                // Fetch current votes
                 const votes = await fetchGlobalVotes();
                 
                 // Check if user has already used this rank for ANY restaurant
                 for (const restaurantName in votes) {
-                    if (votes[restaurantName][currentUser] === voteRank) {
+                    if (votes[restaurantName] && votes[restaurantName][currentUser] === voteRank) {
                         errorDiv.textContent = `You have already used rank ${voteRank} for ${restaurantName}. Each rank can only be used once.`;
                         errorDiv.style.display = 'block';
                         return;
@@ -815,16 +815,19 @@
                 // Add the vote
                 votes[currentVotingRestaurant][currentUser] = voteRank;
                 
-                // Save to server
-                await saveVotesToServer(votes);
+                // Save to GitHub
+                await saveVotesToGitHub(votes);
                 
-                // Success feedback
+                // Update cache
+                cachedVotes = votes;
+                
+                // Success!
                 alert(`Vote submitted! You gave rank ${voteRank} to ${currentVotingRestaurant}`);
                 closeVoteModal();
                 
             } catch (error) {
                 console.error('Error submitting vote:', error);
-                errorDiv.textContent = 'Error submitting vote. Please try again later.';
+                errorDiv.textContent = 'Error submitting vote: ' + error.message;
                 errorDiv.style.display = 'block';
             }
         }
@@ -839,4 +842,3 @@
     </script>
 </body>
 </html>
-        

@@ -285,7 +285,7 @@
         // Check if user is admin and show reset button
         function checkAdminAccess() {
             const currentUser = localStorage.getItem('currentUser');
-            if (currentUser === 'Bryan' || currentUser === 'Admin') {
+            if (currentUser === 'Bryan' || currentUser === 'Admin' || currentUser === 'Sushant') {
                 document.getElementById('resetButton').style.display = 'inline-block';
             }
         }
@@ -294,13 +294,13 @@
         async function resetRankings() {
             if (confirm('Are you sure you want to reset ALL rankings? This action cannot be undone!')) {
                 try {
-                    await saveVotesToServer({});
+                    await saveVotesToGitHub({});
+                    globalVotes = {};
                     alert('All rankings have been reset!');
-                    await fetchGlobalVotes();
                     renderRankings();
                 } catch (error) {
                     console.error('Error resetting:', error);
-                    alert('Error resetting rankings. Please try again later.');
+                    alert('Error resetting rankings: ' + error.message);
                 }
             }
         }
@@ -382,18 +382,20 @@
                         delete votes[restaurantName];
                     }
                     
-                    // Save to server
-                    await saveVotesToServer(votes);
+                    // Save to GitHub
+                    await saveVotesToGitHub(votes);
+                    
+                    // Update cache
+                    globalVotes = votes;
                     alert('Vote removed successfully!');
                     
-                    // Refresh
-                    await fetchGlobalVotes();
+                    // Refresh display
                     showMyVotes();
                     renderRankings();
                 }
             } catch (error) {
                 console.error('Error removing vote:', error);
-                alert('Error removing vote. Please try again later.');
+                alert('Error removing vote: ' + error.message);
             }
         }
         
@@ -404,21 +406,20 @@
                 closeVotesModal();
             }
         }
-        
         // Initialize admin check
         checkAdminAccess();
         
-        // JSONBlob configuration (free JSON storage, no auth needed)
-        const JSONBLOB_ID = '019be5c2-99fc-7702-b0e7-611902238818';
-        const JSONBLOB_URL = `https://jsonblob.com/api/jsonBlob/${JSONBLOB_ID}`;
+        // Cloudflare Worker URL (secure - token stored server-side)
+        // Deploy cloudflare-worker.js and paste your worker URL here
+        const WORKER_URL = 'https://lunch-votes.YOUR_SUBDOMAIN.workers.dev';
         
         // Cache for global votes
         let globalVotes = {};
         
-        // Fetch votes from JSONBlob
+        // Fetch votes via Cloudflare Worker
         async function fetchGlobalVotes() {
             try {
-                const response = await fetch(JSONBLOB_URL);
+                const response = await fetch(WORKER_URL);
                 if (response.ok) {
                     const data = await response.json();
                     globalVotes = data.votes || {};
@@ -430,21 +431,20 @@
             return {};
         }
         
-        // Save votes to JSONBlob
-        async function saveVotesToServer(votes) {
-            const newContent = {
-                votes: votes,
-                lastUpdated: new Date().toISOString()
-            };
+        // Save votes via Cloudflare Worker (secure!)
+        async function saveVotesToGitHub(votes) {
+            const currentUser = localStorage.getItem('currentUser') || 'Anonymous';
             
-            const response = await fetch(JSONBLOB_URL, {
-                method: 'PUT',
+            const response = await fetch(WORKER_URL, {
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newContent)
+                body: JSON.stringify({ votes, user: currentUser })
             });
             
-            if (!response.ok) {
-                throw new Error('Failed to save votes');
+            const result = await response.json();
+            
+            if (!response.ok || result.error) {
+                throw new Error(result.error || 'Failed to save vote');
             }
         }
         
