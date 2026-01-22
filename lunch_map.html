@@ -683,15 +683,14 @@
         let currentVotingRestaurant = null;
         let currentUser = null;
         
-        // npoint.io configuration (free JSON storage, no auth needed)
-        // Create your bin at https://www.npoint.io/ and paste your bin ID below
-        const NPOINT_BIN_ID = '4fc7540446ec511ab1a5';
-        const NPOINT_URL = `https://api.npoint.io/${NPOINT_BIN_ID}`;
+        // JSONBlob configuration (free JSON storage, no auth needed)
+        const JSONBLOB_ID = '019be5c2-99fc-7702-b0e7-611902238818';
+        const JSONBLOB_URL = `https://jsonblob.com/api/jsonBlob/${JSONBLOB_ID}`;
         
-        // Fetch current votes from npoint.io
+        // Fetch current votes from JSONBlob
         async function fetchGlobalVotes() {
             try {
-                const response = await fetch(NPOINT_URL);
+                const response = await fetch(JSONBLOB_URL);
                 if (response.ok) {
                     const data = await response.json();
                     return data.votes || {};
@@ -702,15 +701,15 @@
             return {};
         }
         
-        // Save votes to npoint.io
+        // Save votes to JSONBlob
         async function saveVotesToServer(votes) {
             const newContent = {
                 votes: votes,
                 lastUpdated: new Date().toISOString()
             };
             
-            const response = await fetch(NPOINT_URL, {
-                method: 'POST',
+            const response = await fetch(JSONBLOB_URL, {
+                method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newContent)
             });
