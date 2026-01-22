@@ -74,12 +74,6 @@ We've added an interactive voting system to help decide where to go!
 - You can **undo any vote** if you change your mind
 - After undoing, that rank becomes available again for another restaurant
 
-**First-Time Setup (One-Time):**
-1. Create a GitHub Personal Access Token at [github.com/settings/tokens](https://github.com/settings/tokens)
-2. Give it `repo` scope (to write to votes.json)
-3. When you vote for the first time, you'll be prompted to enter this token
-4. The token is saved in your browser for future votes
-
 > **Note:** All votes are stored in `votes.json` and visible to everyone. Rankings update automatically!
 
 ---

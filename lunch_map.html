@@ -683,16 +683,15 @@
         let currentVotingRestaurant = null;
         let currentUser = null;
         
-        // GitHub configuration
-        const GITHUB_OWNER = 'nsushant';
-        const GITHUB_REPO = 'ANT_OR_Lunch_Visits';
-        const VOTES_FILE = 'votes.json';
+        // npoint.io configuration (free JSON storage, no auth needed)
+        // Create your bin at https://www.npoint.io/ and paste your bin ID below
+        const NPOINT_BIN_ID = '4fc7540446ec511ab1a5'; // e.g., 'a1b2c3d4e5f6'
+        const NPOINT_URL = `https://api.npoint.io/${NPOINT_BIN_ID}`;
         
-        // Fetch current votes from GitHub
+        // Fetch current votes from npoint.io
         async function fetchGlobalVotes() {
             try {
-                const timestamp = new Date().getTime();
-                const response = await fetch(`https://${GITHUB_OWNER}.github.io/${GITHUB_REPO}/${VOTES_FILE}?t=${timestamp}`);
+                const response = await fetch(NPOINT_URL);
                 if (response.ok) {
                     const data = await response.json();
                     return data.votes || {};
@@ -703,39 +702,21 @@
             return {};
         }
         
-        // Save votes to GitHub
-        async function saveVotesToGitHub(votes) {
-            const githubToken = localStorage.getItem('githubToken');
-            if (!githubToken) throw new Error('No GitHub token');
-            
-            // Get current file SHA
-            const fileResponse = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${VOTES_FILE}`, {
-                headers: { 'Authorization': `token ${githubToken}` }
-            });
-            const fileData = await fileResponse.json();
-            
-            // Prepare new content
-            const newContent = JSON.stringify({
+        // Save votes to npoint.io
+        async function saveVotesToServer(votes) {
+            const newContent = {
                 votes: votes,
                 lastUpdated: new Date().toISOString()
-            }, null, 2);
+            };
             
-            // Update file
-            const updateResponse = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${VOTES_FILE}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `token ${githubToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    message: `Vote update by ${localStorage.getItem('currentUser')}`,
-                    content: btoa(unescape(encodeURIComponent(newContent))),
-                    sha: fileData.sha
-                })
+            const response = await fetch(NPOINT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newContent)
             });
             
-            if (!updateResponse.ok) {
-                throw new Error('Failed to update votes');
+            if (!response.ok) {
+                throw new Error('Failed to save votes');
             }
         }
         
@@ -807,18 +788,6 @@
                 return;
             }
             
-            // Check for GitHub token
-            let githubToken = localStorage.getItem('githubToken');
-            if (!githubToken) {
-                githubToken = prompt('To vote, please enter your GitHub Personal Access Token (with repo scope).\n\nCreate one at: github.com/settings/tokens');
-                if (!githubToken) {
-                    errorDiv.textContent = 'GitHub token required to vote';
-                    errorDiv.style.display = 'block';
-                    return;
-                }
-                localStorage.setItem('githubToken', githubToken);
-            }
-            
             try {
                 // Fetch current votes from GitHub
                 const votes = await fetchGlobalVotes();
@@ -847,8 +816,8 @@
                 // Add the vote
                 votes[currentVotingRestaurant][currentUser] = voteRank;
                 
-                // Save to GitHub
-                await saveVotesToGitHub(votes);
+                // Save to server
+                await saveVotesToServer(votes);
                 
                 // Success feedback
                 alert(`Vote submitted! You gave rank ${voteRank} to ${currentVotingRestaurant}`);
@@ -856,9 +825,8 @@
                 
             } catch (error) {
                 console.error('Error submitting vote:', error);
-                errorDiv.textContent = 'Error submitting vote. Check your GitHub token and try again.';
+                errorDiv.textContent = 'Error submitting vote. Please try again later.';
                 errorDiv.style.display = 'block';
-                localStorage.removeItem('githubToken');
             }
         }
         
