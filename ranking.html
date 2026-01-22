@@ -291,23 +291,39 @@
         }
         
         // Reset all rankings
-        function resetRankings() {
+        async function resetRankings() {
             if (confirm('Are you sure you want to reset ALL rankings? This action cannot be undone!')) {
-                localStorage.removeItem('restaurantVotes');
-                alert('All rankings have been reset!');
-                renderRankings();
+                const githubToken = localStorage.getItem('githubToken');
+                if (!githubToken) {
+                    const token = prompt('Please enter your GitHub token to reset votes:');
+                    if (!token) return;
+                    localStorage.setItem('githubToken', token);
+                }
+                
+                try {
+                    await saveVotesToGitHub({});
+                    alert('All rankings have been reset!');
+                    await fetchGlobalVotes();
+                    renderRankings();
+                } catch (error) {
+                    console.error('Error resetting:', error);
+                    alert('Error resetting rankings. Check your GitHub token.');
+                    localStorage.removeItem('githubToken');
+                }
             }
         }
         
         // Show My Votes modal
-        function showMyVotes() {
+        async function showMyVotes() {
             const currentUser = localStorage.getItem('currentUser');
             if (!currentUser) {
                 alert('Please log in to view your votes!');
                 return;
             }
             
-            const votes = JSON.parse(localStorage.getItem('restaurantVotes') || '{}');
+            // Fetch latest votes
+            await fetchGlobalVotes();
+            const votes = globalVotes;
             const votesContent = document.getElementById('votesContent');
             
             // Find all votes by current user
@@ -354,28 +370,82 @@
         }
         
         // Undo a specific vote
-        function undoVote(restaurantName, rank) {
+        async function undoVote(restaurantName, rank) {
             if (!confirm(`Are you sure you want to remove your rank ${rank} vote for ${restaurantName}?`)) {
                 return;
             }
             
             const currentUser = localStorage.getItem('currentUser');
-            const votes = JSON.parse(localStorage.getItem('restaurantVotes') || '{}');
+            const githubToken = localStorage.getItem('githubToken');
             
-            if (votes[restaurantName] && votes[restaurantName][currentUser]) {
-                delete votes[restaurantName][currentUser];
+            if (!githubToken) {
+                const token = prompt('Please enter your GitHub token to modify votes:');
+                if (!token) return;
+                localStorage.setItem('githubToken', token);
+            }
+            
+            try {
+                // Fetch current votes
+                await fetchGlobalVotes();
+                const votes = {...globalVotes};
                 
-                // Remove restaurant entry if no votes left
-                if (Object.keys(votes[restaurantName]).length === 0) {
-                    delete votes[restaurantName];
+                if (votes[restaurantName] && votes[restaurantName][currentUser]) {
+                    delete votes[restaurantName][currentUser];
+                    
+                    // Remove restaurant entry if no votes left
+                    if (Object.keys(votes[restaurantName]).length === 0) {
+                        delete votes[restaurantName];
+                    }
+                    
+                    // Save to GitHub
+                    await saveVotesToGitHub(votes);
+                    alert('Vote removed successfully!');
+                    
+                    // Refresh
+                    await fetchGlobalVotes();
+                    showMyVotes();
+                    renderRankings();
                 }
-                
-                localStorage.setItem('restaurantVotes', JSON.stringify(votes));
-                alert('Vote removed successfully!');
-                
-                // Refresh both the modal and the rankings table
-                showMyVotes();
-                renderRankings();
+            } catch (error) {
+                console.error('Error removing vote:', error);
+                alert('Error removing vote. Check your GitHub token.');
+                localStorage.removeItem('githubToken');
+            }
+        }
+        
+        // Save votes to GitHub
+        async function saveVotesToGitHub(votes) {
+            const githubToken = localStorage.getItem('githubToken');
+            if (!githubToken) throw new Error('No GitHub token');
+            
+            // Get current file SHA
+            const fileResponse = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${VOTES_FILE}`, {
+                headers: { 'Authorization': `token ${githubToken}` }
+            });
+            const fileData = await fileResponse.json();
+            
+            // Prepare new content
+            const newContent = JSON.stringify({
+                votes: votes,
+                lastUpdated: new Date().toISOString()
+            }, null, 2);
+            
+            // Update file
+            const updateResponse = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${VOTES_FILE}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${githubToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: `Vote update by ${localStorage.getItem('currentUser')}`,
+                    content: btoa(unescape(encodeURIComponent(newContent))),
+                    sha: fileData.sha
+                })
+            });
+            
+            if (!updateResponse.ok) {
+                throw new Error('Failed to update votes');
             }
         }
         
@@ -389,6 +459,31 @@
         
         // Initialize admin check
         checkAdminAccess();
+        
+        // GitHub configuration
+        const GITHUB_OWNER = 'nsushant';
+        const GITHUB_REPO = 'ANT_OR_Lunch_Visits';
+        const VOTES_FILE = 'votes.json';
+        
+        // Cache for global votes
+        let globalVotes = {};
+        
+        // Fetch votes from GitHub Pages
+        async function fetchGlobalVotes() {
+            try {
+                // Use GitHub Pages URL with cache-busting
+                const timestamp = new Date().getTime();
+                const response = await fetch(`https://${GITHUB_OWNER}.github.io/${GITHUB_REPO}/${VOTES_FILE}?t=${timestamp}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    globalVotes = data.votes || {};
+                    return globalVotes;
+                }
+            } catch (error) {
+                console.error('Error fetching global votes:', error);
+            }
+            return {};
+        }
         
         // Restaurant data from places.md
         const restaurants = [
@@ -414,9 +509,9 @@
             direction: 'desc'
         };
         
-        // Calculate points for each restaurant from votes stored in localStorage
+        // Calculate points for each restaurant from global votes
         function calculatePoints() {
-            const votes = JSON.parse(localStorage.getItem('restaurantVotes') || '{}');
+            const votes = globalVotes;
             const points = {};
             
             // Initialize all restaurants with 0 points
@@ -541,11 +636,18 @@
             });
         });
         
-        // Initial render
-        renderRankings();
+        // Initial load - fetch votes from GitHub then render
+        async function init() {
+            await fetchGlobalVotes();
+            renderRankings();
+        }
+        init();
         
-        // Update rankings every 2 seconds to reflect any new votes
-        setInterval(renderRankings, 2000);
+        // Refresh votes every 30 seconds
+        setInterval(async () => {
+            await fetchGlobalVotes();
+            renderRankings();
+        }, 30000);
     </script>
 </body>
 </html>
