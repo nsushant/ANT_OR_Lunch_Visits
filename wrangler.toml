@@ -1,0 +1,12 @@
+name = "lunch-votes"
+main = "cloudflare-worker.js"
+compatibility_date = "2023-12-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "lunch-votes"
+database_id = "654f8d82-aaf0-4842-b567-25ccf3748bee"
+
+[vars]
+# ADMIN_KEY - set in Cloudflare Dashboard (Settings > Variables)
+# TURNSTILE_SECRET_KEY - set in Cloudflare Dashboard (Settings > Variables)

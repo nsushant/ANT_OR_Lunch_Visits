@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
     
     <style>
@@ -147,6 +148,11 @@
             border-radius: 4px;
             box-sizing: border-box;
             font-size: 14px;
+        }
+        .turnstile-container {
+            margin: 15px 0;
+            display: flex;
+            justify-content: center;
         }
         .vote-submit-btn {
             background: #4CAF50;
@@ -306,6 +312,7 @@
             <p>Give your rank (1, 2, or 3)</p>
             <input type="number" id="voteRank" class="vote-input" placeholder="Rank (1, 2, or 3)" min="1" max="3" />
             <div class="vote-error" id="voteError"></div>
+            <div id="turnstile-container" class="turnstile-container"></div>
             <div style="margin-top: 15px;">
                 <button class="vote-submit-btn" onclick="submitVote()">Submit Vote</button>
                 <button class="vote-cancel-btn" onclick="closeVoteModal()">Cancel</button>
@@ -687,6 +694,30 @@
         // Deploy cloudflare-worker.js and paste your worker URL here
         const WORKER_URL = 'https://lunch-votes.nsushant683.workers.dev/';
         
+        // Turnstile site key
+        const TURNSTILE_SITE_KEY = '0xAAAAAACbPMMWG0dD5Y1hy';
+        let turnstileToken = null;
+        
+        // Initialize Turnstile widget
+        function initTurnstile() {
+            const container = document.getElementById('turnstile-container');
+            if (container && window.turnstile) {
+                container.innerHTML = '';
+                window.turnstile.render(container, {
+                    sitekey: TURNSTILE_SITE_KEY,
+                    callback: function(token) {
+                        turnstileToken = token;
+                    },
+                    'expired-callback': function() {
+                        turnstileToken = null;
+                    },
+                    'error-callback': function() {
+                        turnstileToken = null;
+                    }
+                });
+            }
+        }
+        
         let cachedVotes = {};
         
         // Fetch current votes via Cloudflare Worker
@@ -704,12 +735,17 @@
             return cachedVotes;
         }
         
-        // Save votes via Cloudflare Worker (secure!)
-        async function saveVotesToGitHub(votes) {
+        // Save vote via Cloudflare Worker (with Turnstile)
+        async function saveVote(restaurantName, userName, rank, turnstileToken) {
             const response = await fetch(WORKER_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ votes, user: currentUser })
+                body: JSON.stringify({ 
+                    restaurant_name: restaurantName,
+                    user_name: userName,
+                    rank: rank,
+                    turnstile_token: turnstileToken
+                })
             });
             
             const result = await response.json();
@@ -717,6 +753,7 @@
             if (!response.ok || result.error) {
                 throw new Error(result.error || 'Failed to save vote');
             }
+            return result;
         }
         
         // Check if user is already logged in
@@ -769,6 +806,8 @@
             document.getElementById('voteRank').value = '';
             document.getElementById('voteError').style.display = 'none';
             document.getElementById('voteModal').style.display = 'block';
+            turnstileToken = null;
+            setTimeout(initTurnstile, 100);
         }
         
         function closeVoteModal() {
@@ -779,6 +818,7 @@
         async function submitVote() {
             const voteRank = parseInt(document.getElementById('voteRank').value);
             const errorDiv = document.getElementById('voteError');
+            errorDiv.style.display = 'none';
             
             // Validate rank
             if (!voteRank || ![1, 2, 3].includes(voteRank)) {
@@ -787,47 +827,33 @@
                 return;
             }
             
+            // Check Turnstile
+            if (!turnstileToken) {
+                errorDiv.textContent = 'Please complete the captcha verification';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
             try {
-                // Fetch current votes
+                // Save vote via worker (worker handles all validation & limits)
+                const result = await saveVote(currentVotingRestaurant, currentUser, voteRank, turnstileToken);
+                
+                // Fetch updated votes
                 const votes = await fetchGlobalVotes();
-                
-                // Check if user has already used this rank for ANY restaurant
-                for (const restaurantName in votes) {
-                    if (votes[restaurantName] && votes[restaurantName][currentUser] === voteRank) {
-                        errorDiv.textContent = `You have already used rank ${voteRank} for ${restaurantName}. Each rank can only be used once.`;
-                        errorDiv.style.display = 'block';
-                        return;
-                    }
-                }
-                
-                // Initialize restaurant votes if not exists
-                if (!votes[currentVotingRestaurant]) {
-                    votes[currentVotingRestaurant] = {};
-                }
-                
-                // Check if user already voted for this restaurant
-                if (votes[currentVotingRestaurant][currentUser]) {
-                    errorDiv.textContent = `You have already voted for ${currentVotingRestaurant} with rank ${votes[currentVotingRestaurant][currentUser]}`;
-                    errorDiv.style.display = 'block';
-                    return;
-                }
-                
-                // Add the vote
-                votes[currentVotingRestaurant][currentUser] = voteRank;
-                
-                // Save to GitHub
-                await saveVotesToGitHub(votes);
-                
-                // Update cache
                 cachedVotes = votes;
                 
                 // Success!
-                alert(`Vote submitted! You gave rank ${voteRank} to ${currentVotingRestaurant}`);
+                const remaining = result.votesRemaining !== undefined ? result.votesRemaining : '?';
+                alert(`Vote submitted! You gave rank ${voteRank} to ${currentVotingRestaurant}. Votes remaining today: ${remaining}`);
                 closeVoteModal();
+                
+                // Reset Turnstile for next vote
+                turnstileToken = null;
+                initTurnstile();
                 
             } catch (error) {
                 console.error('Error submitting vote:', error);
-                errorDiv.textContent = 'Error submitting vote: ' + error.message;
+                errorDiv.textContent = error.message;
                 errorDiv.style.display = 'block';
             }
         }

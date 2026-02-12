@@ -4,6 +4,7 @@
     <title>Restaurant Rankings</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     
     <style>
         body {
@@ -290,11 +291,25 @@
             }
         }
         
-        // Reset all rankings
+        // Reset all rankings (admin function)
         async function resetRankings() {
+            const adminKey = prompt('Enter admin key to reset all rankings:');
+            if (!adminKey) return;
+            
             if (confirm('Are you sure you want to reset ALL rankings? This action cannot be undone!')) {
                 try {
-                    await saveVotesToGitHub({});
+                    const response = await fetch(WORKER_URL, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ admin_key: adminKey })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (!response.ok || result.error) {
+                        throw new Error(result.error || 'Failed to reset');
+                    }
+                    
                     globalVotes = {};
                     alert('All rankings have been reset!');
                     renderRankings();
