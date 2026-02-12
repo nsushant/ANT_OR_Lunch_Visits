@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=turnstileOnLoad" async defer></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
     
     <style>
@@ -695,27 +695,49 @@
         const WORKER_URL = 'https://lunch-votes.nsushant683.workers.dev/';
         
         // Turnstile site key
-        const TURNSTILE_SITE_KEY = '0xAAAAAACbPMMWG0dD5Y1hy';
-        let turnstileToken = null;
+        const TURNSTILE_SITE_KEY = '0x4AAAAAACbPMMWG0dD5Y1hy';
+        let turnstileWidgetId = null;
+        let turnstileLoaded = false;
+        
+        // Global callback when Turnstile script loads
+        function turnstileOnLoad() {
+            turnstileLoaded = true;
+            initTurnstile();
+        }
         
         // Initialize Turnstile widget
         function initTurnstile() {
             const container = document.getElementById('turnstile-container');
-            if (container && window.turnstile) {
-                container.innerHTML = '';
-                window.turnstile.render(container, {
-                    sitekey: TURNSTILE_SITE_KEY,
-                    callback: function(token) {
-                        turnstileToken = token;
-                    },
-                    'expired-callback': function() {
-                        turnstileToken = null;
-                    },
-                    'error-callback': function() {
-                        turnstileToken = null;
-                    }
-                });
+            const errorDiv = document.getElementById('voteError');
+            
+            if (!container) return;
+            
+            if (!window.turnstile) {
+                if (errorDiv) {
+                    errorDiv.textContent = 'CAPTCHA failed to load. Please refresh the page.';
+                    errorDiv.style.display = 'block';
+                }
+                return;
             }
+            
+            container.innerHTML = '';
+            turnstileWidgetId = window.turnstile.render(container, {
+                sitekey: TURNSTILE_SITE_KEY,
+                callback: function(token) {
+                    turnstileToken = token;
+                    if (errorDiv) errorDiv.style.display = 'none';
+                },
+                'expired-callback': function() {
+                    turnstileToken = null;
+                },
+                'error-callback': function() {
+                    turnstileToken = null;
+                    if (errorDiv) {
+                        errorDiv.textContent = 'CAPTCHA error. Please try again.';
+                        errorDiv.style.display = 'block';
+                    }
+                }
+            });
         }
         
         let cachedVotes = {};
@@ -807,7 +829,7 @@
             document.getElementById('voteError').style.display = 'none';
             document.getElementById('voteModal').style.display = 'block';
             turnstileToken = null;
-            setTimeout(initTurnstile, 100);
+            initTurnstile();
         }
         
         function closeVoteModal() {
